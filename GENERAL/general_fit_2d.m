@@ -1,4 +1,4 @@
-function [ fitresult, gof, output] = generalFit2D( fitType, xData, yData, lowerBounds, upperBounds, startPoints )
+function [ fitresult, gof, output] = general_fit_2d( fitType, xData, yData, lowerBounds, upperBounds, startPoints )
 %generalFit2D fits fittype to xdata, ydata using lower bounds, upper bounds
 %and startpoints
 
