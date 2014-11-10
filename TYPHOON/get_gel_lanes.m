@@ -180,14 +180,14 @@ close all
 %% calculate lane profiles (horizontal integrals) for each lane
 %   laneProfiles is array of lanes integrated horizontally over fitted lane size
 
-laneProfiles=zeros(selectedArea(4),size(lanePositions,1),nr_images);
+laneProfiles=cell(nr_images,nr_lanes);  %zeros(selectedArea(4),size(lanePositions,1),nr_images);
 
 for curr_image=1:nr_images
     hold all
 
     for curr_lane=1:size(lanePositions,1)
-        laneProfiles(:,curr_lane,curr_image)=sum(area(1:selectedArea(4),lanesFitted(curr_lane,1):lanesFitted(curr_lane,2)),2);
-        plot(laneProfiles(:,curr_lane,curr_image))
+        laneProfiles{curr_image,curr_lane}=sum(area(1:selectedArea(4),lanesFitted(curr_lane,1):lanesFitted(curr_lane,2)),2);
+        plot(laneProfiles{curr_image,curr_lane})
         title('fitted profiles - press any key');
     end
     pause
@@ -204,5 +204,5 @@ for i=1:nr_lanes
     lanePositions(i,4)=selectedArea(2)+selectedArea(4);
 end
 
-gelData=struct('profiles',laneProfiles,'lanePositions',lanePositions);
+gelData=struct('profiles',{laneProfiles},'lanePositions',lanePositions);
 end
