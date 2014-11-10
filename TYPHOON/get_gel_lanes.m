@@ -3,9 +3,10 @@ function gelData = get_gel_lanes(varargin)
 %   INPUTS:
 %   [ optional:[ weights for channels] ]
 %   OUTPUT:
-%   gelData struct with .profiles .lanePositions
-%   .profiles is array of lane profiles (horizontal integrals)
+%   gelData struct with .profiles .lanePositions .imageNames
+%   .profiles is cell array {nr_image,nr_lane} of lane profiles (horizontal integrals)
 %   .lanePositions is array nr_lanes * [left edge, right edge, top edge, bottom edge]
+%   .imageNames is cell array of image name strings
 
 %% select image data
 
@@ -204,5 +205,5 @@ for i=1:nr_lanes
     lanePositions(i,4)=selectedArea(2)+selectedArea(4);
 end
 
-gelData=struct('profiles',{laneProfiles},'lanePositions',lanePositions);
+gelData=struct('profiles',{laneProfiles},'lanePositions',lanePositions,'imageNames',{filenames});
 end
