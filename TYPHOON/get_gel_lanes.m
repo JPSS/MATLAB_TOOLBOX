@@ -185,9 +185,12 @@ laneProfiles=cell(nr_images,nr_lanes);  %zeros(selectedArea(4),size(lanePosition
 
 for curr_image=1:nr_images
     hold all
+    
+    tempImage=images_bg{curr_image};
+    tempArea=tempImage( selectedArea(2):selectedArea(2)+selectedArea(4), selectedArea(1):selectedArea(1)+selectedArea(3));
 
     for curr_lane=1:size(lanePositions,1)
-        laneProfiles{curr_image,curr_lane}=sum(area(1:selectedArea(4),lanesFitted(curr_lane,1):lanesFitted(curr_lane,2)),2);
+        laneProfiles{curr_image,curr_lane}=sum(tempArea(1:selectedArea(4),lanesFitted(curr_lane,1):lanesFitted(curr_lane,2)),2);
         plot(laneProfiles{curr_image,curr_lane})
         title('fitted profiles - press any key');
     end
