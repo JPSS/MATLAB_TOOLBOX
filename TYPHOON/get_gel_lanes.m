@@ -53,7 +53,7 @@ for i=1:nr_images
     end
     close all
     
-    images_bg{i} = correct_background(images{i}, 'Background correction');
+    images_bg{i} = correct_background(images{i}, 'areas', 1); % subtract a constant from each image
    
 end
 %% find estimated lanes using find_lanes_roots.m
