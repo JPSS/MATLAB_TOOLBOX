@@ -3,7 +3,7 @@ function [ lanes ] = find_lanes_intersect( image, pos )
 %  This function determines the positions of lanes based on a user defined
 %  value.
 %  Input: image = Matrix of gray values, pos = positions of outer rectangle as [x0 y0 width height]
-%  x0, y0 are the top right positions
+%  x0, y0 are the top left positions
 %  Output: lanes = positions of lanes
 %  Example: find_lanes_intersect(some_image, [100 150 200 50 ])
 
