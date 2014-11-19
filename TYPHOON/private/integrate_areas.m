@@ -20,16 +20,19 @@ function [ I_mean, areas ] = integrate_areas(img, n_areas, varargin)
     p = inputParser;
     default_resizable = false;
     default_plot_factor = ones(1, max(size(img)));
-
+    default_message = 'Select area';
+    
     addRequired(p,'img',@iscell);
     addRequired(p,'n_areas',@isnumeric);
 
     addParameter(p,'resizable',default_resizable, @islogical);
     addParameter(p,'plot_factor',default_plot_factor, @(x) length(img)==length(x) ); % check that plot factor has correct size
+    addParameter(p,'message',default_message, @isstr);
 
     parse(p, img, n_areas, varargin{:});
     resizable = p.Results.resizable;
     plot_factor = p.Results.plot_factor;
+    message = p.Results.message;
     
     % init variables
     areas = zeros(n_areas, 4);
@@ -44,7 +47,7 @@ function [ I_mean, areas ] = integrate_areas(img, n_areas, varargin)
     
     % select areas by hand
     cur_fig = plot_image_ui(img_show); % show image
-    title(['Select area. Resizable = ' num2str((resizable)) ', plot_weights = ' num2str(plot_factor)])
+    title({message, ['Resizable = ' num2str((resizable)) ', plot_weights = ' num2str(plot_factor)]})
     for i=1:n_areas
         % select area
         if i==1
