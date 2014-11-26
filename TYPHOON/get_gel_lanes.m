@@ -112,7 +112,7 @@ for i=1:nr_lanes                                                                
         end
         
         %fit gauss convolved on step function to data in current lane selection
-        [laneFits{i,1:3}]=generalFit2D(gaussConvolveStepFit,leftEdge:rightEdge,verticalSum(leftEdge:rightEdge),[-Inf -Inf -Inf -Inf],[Inf Inf Inf Inf],fitParameters);
+        [laneFits{i,1:3}]=general_Fit_2D(gaussConvolveStepFit,leftEdge:rightEdge,verticalSum(leftEdge:rightEdge),[-Inf -Inf -Inf -Inf],[Inf Inf Inf Inf],fitParameters);
         fitParameters=coeffvalues(laneFits{i,1});
 
         %calculate fit integral outside lane selection
