@@ -1,4 +1,4 @@
-function gelData = get_gel_lanes(varargin)
+function gelData = get_gel_lanes(imageData,varargin)
 %% Loads image, fits lanes according to step function convolved with gaussian
 %   INPUTS:
 %   [ optional:[ weights for channels] ]
@@ -8,62 +8,24 @@ function gelData = get_gel_lanes(varargin)
 %   .lanePositions is array nr_lanes * [left edge, right edge, top edge, bottom edge]
 %   .imageNames is cell array of image name strings
 
-%% select image data
-
-temp = inputdlg({'How many images (channels) do you want to load:'}, 'How many images (channels) do you want to load?', 1, {'1'});
-nr_images = str2double(temp(1));
+%% load image weight factors
 
 if isempty(varargin)                                                            %check weights for different channels
-    weight_factors=num2cell(ones(1,nr_images));
-elseif length(varargin)~=nr_images
+    weight_factors=num2cell(ones(1,imageData.nrImages));
+elseif length(varargin)~=imageData.nrImages
     error('wrong number of weights for images')
 else
     weight_factors=varargin;
 end
 
-filenames = cell(nr_images, 1);
-pathnames = cell(nr_images, 1);
-
-lastDirectory = userpath;
-lastDirectory=lastDirectory(1:end-1);
-for i=1:nr_images
-    cd(lastDirectory)
-    [filenames{i}, pathnames{i}]=uigetfile('*.tif','Select image:');
-    lastDirectory = pathnames{i};
-end
-%% create output folder
-
-pname = inputdlg({'Output folder and prefix:'}, 'Output folder and prefix' , 1, {filenames{1}(1:size(filenames{1},2)-4)} );
-prefix_out = pname{1};
-path_out = [pathnames{1} prefix_out ];
-mkdir(path_out);
-
-%% load image data, rotate images if necessary, apply background correction to images
-
-images = cell(nr_images, 1);
-images_bg = cell(nr_images, 1);
-
-for i=1:nr_images
-    images{i} = double(imread([pathnames{i} filesep filenames{i}]));             %load image data
-    
-    plot_image_ui(images{i})                                                     %plot and rotate gel
-    button = questdlg('Rotate?','Rotate','Rotate','No','No');
-    if strcmp(button,'Rotate') 
-        images{i} = imrotate(images{i}, -90);
-    end
-    close all
-    
-    images_bg{i} = correct_background(images{i}, 'areas', 1); % subtract a constant from each image
-   
-end
 %% find estimated lanes using find_lanes_roots.m
 %   pos is position information of selected lane area [ left edge, top edge, width, height ]
 %   lanePositions(Nlanes) is array of lanes of [ left edge, top edge, width, height ]
 %   nr_lanes is number of lanes found
  
-image_sum = weight_factors{1}.*images_bg{1};                           %calculated weighted sum of channel image data
-for i=2:nr_images
-  image_sum = image_sum + weight_factors{i}.*images_bg{i};
+image_sum = weight_factors{1}.*imageData.images{1};                           %calculated weighted sum of channel image data
+for i=2:imageData.nrImages
+  image_sum = image_sum + weight_factors{i}.*imageData.images{i};
 end
 
 plot_image_ui(image_sum)                                        %select area for lane determination
@@ -100,7 +62,7 @@ plot(verticalSum,'red')
 hold on
 plot(verticalSum-min(verticalSum))
 plot(1:selectedArea(3),0)
-legend('original bg corrected','move to 0')
+legend('original','move to 0')
 
 button = questdlg('move min value to 0?','move min value to 0?' ,'No','Yes', 'Yes');
 if strcmp(button,'Yes')
@@ -150,7 +112,7 @@ for i=1:nr_lanes                                                                
         end
         
         %fit gauss convolved on step function to data in current lane selection
-        [laneFits{i,1:3}]=generalFit2D(gaussConvolveStepFit,leftEdge:rightEdge,verticalSum(leftEdge:rightEdge),[-Inf -Inf -Inf -Inf],[Inf Inf Inf Inf],fitParameters);
+        [laneFits{i,1:3}]=general_Fit_2D(gaussConvolveStepFit,leftEdge:rightEdge,verticalSum(leftEdge:rightEdge),[-Inf -Inf -Inf -Inf],[Inf Inf Inf Inf],fitParameters);
         fitParameters=coeffvalues(laneFits{i,1});
 
         %calculate fit integral outside lane selection
@@ -181,12 +143,12 @@ close all
 %% calculate lane profiles (horizontal integrals) for each lane
 %   laneProfiles is array of lanes integrated horizontally over fitted lane size
 
-laneProfiles=cell(nr_images,nr_lanes);  %zeros(selectedArea(4),size(lanePositions,1),nr_images);
+laneProfiles=cell(imageData.nrImages,nr_lanes);  %zeros(selectedArea(4),size(lanePositions,1),nr_images);
 
-for curr_image=1:nr_images
+for curr_image=1:imageData.nrImages
     hold all
     
-    tempImage=images_bg{curr_image};
+    tempImage=imageData.images{curr_image};
     tempArea=tempImage( selectedArea(2):selectedArea(2)+selectedArea(4), selectedArea(1):selectedArea(1)+selectedArea(3));
 
     for curr_lane=1:size(lanePositions,1)
@@ -208,5 +170,5 @@ for i=1:nr_lanes
     lanePositions(i,4)=selectedArea(2)+selectedArea(4);
 end
 
-gelData=struct('profiles',{laneProfiles},'lanePositions',lanePositions,'imageNames',{filenames});
+gelData=struct('profiles',{laneProfiles},'lanePositions',lanePositions,'imageNames',{imageData.filenames});
 end
