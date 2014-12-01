@@ -1,11 +1,9 @@
 function imageDataBgCorrected = background_correct_gel_image(imageData, varargin)
 %% Loads image, fits lanes according to step function convolved with gaussian
 %   INPUTS: imageData from load_gel_image.m
-%           'numberOfAreas' (optional parameter) = set number of areas for
-%           bg correction, default is 1
+%           'numberOfAreas' (optional parameter) = set number of 
 %   OUTPUT:
 %   imageData struct from load_gel_image.m with .images replaced by background corrected images
-% Example = background_correct_gel_image(img, 'numberOfAreas', 4)
 
 %% parse input
 p = inputParser;
@@ -15,7 +13,7 @@ addRequired(p,'imageData');
 addParameter(p,'numberOfAreas',default_n_ref_bg, @isnumeric); 
 
 parse(p, imageData, varargin{:});
-n_ref_bg = p.Results.numberOfAreas;  % number of references for background correction
+n_ref_bg = p.Results.areas_bg;  % number of references for background correction
 
 %% apply background correction to images
 
