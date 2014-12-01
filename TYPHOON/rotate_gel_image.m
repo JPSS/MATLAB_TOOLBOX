@@ -8,12 +8,12 @@ function imageDataRotated = rotate_gel_image(imageData)
 
 for i=1:imageData.nrImages
    
-    plot_image_ui(imageData.images{i})                                                     %plot and rotate gel
+    cf = plot_image_ui(imageData.images{i}); %plot and rotate gel
     button = questdlg('Rotate?','Rotate','Rotate','No','No');
     if strcmp(button,'Rotate') 
-        imageData.images{i} = imrotate(images{i}, -90);
+        imageData.images{i} = imrotate(imageData.images{i}, -90);
     end
-    close all
+    close(cf)
   
 end
 %% create imageDataRotated structure, return imageDataRotated structure
