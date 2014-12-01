@@ -31,7 +31,7 @@ function [ bandData ] = get_band_intensities(imageData, varargin)
     [I_mean, bandPositions] = integrate_areas(imageData.images, n_bands, 'resizable', resizable); %cell of images, number of bands, 
 
     %% make output data
-    bandData = struct('band_intensities',{I_mean},'bandPositions',{bandPositions} );
+    bandData = struct('intensities',{I_mean},'positions',{bandPositions} );
     
 end
 
