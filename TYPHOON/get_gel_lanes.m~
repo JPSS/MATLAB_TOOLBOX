@@ -121,7 +121,7 @@ for i=1:nr_lanes                                                                
         tempError=1-gauss_convolve_step_integral(newFitParameters,fitCenter-visibleWidth,fitCenter+visibleWidth)/((newFitParameters(2)-newFitParameters(4))*newFitParameters(3));
     end
     %find fit width such that (1-cutOffFit) is within fit range
-    tempFunctionHandle=@(x)gauss_convolve_step_integral(newFitParameters,fitCenter-x,fitCenter+x)/((newFitParameters(2)-newFitParameters(4))*newFitParameters(3))-(1-cutoffFit);
+    tempFunctionHandle=@(x)gauss_convolve_step_integral(fitParameters,fitCenter-x,fitCenter+x)/((fitParameters(2)-fitParameters(4))*fitParameters(3))-(1-cutoffFit);
     fitWidth=fzero(tempFunctionHandle,0);
     lanesFitted(i,1)=round(fitCenter-fitWidth);
     lanesFitted(i,2)=round(fitCenter+fitWidth);
