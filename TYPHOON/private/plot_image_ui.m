@@ -23,7 +23,7 @@ addParameter(p,'type','figure', @ischar );
 parse(p, image, varargin{:});
 
 %check type request, create appropriate class object
-if strcmp(p.Results.type,'image')
+if strcmp(p.Results.type,'image')==0
     cur_fig = imagesc(img, clim_start); colorbar, axis image 
 else
     cur_fig = figure('units','normalized','outerposition',[0 0 1 1]);
