@@ -1,5 +1,7 @@
 function [ cur_fig ] = plot_image_ui(img,varargin)
-%   plots image, adds sliders for colormap min max and range
+%   plots image, adds sliders for colormap min, colormap max and data range
+%   optional parameter 'colormap' takes any colormap, default gray colormap
+%   optional parameter 'type' takes string, if string is 'image' creates an image class object, if other creates an figure class object
 
 x = reshape(img, size(img,1)*size(img,2), 1);  %make an array out of the img to determine clim_start
 
@@ -11,23 +13,34 @@ clim_start = [mean(x)-3*std(x) mean(x)+3*std(x)];
 clim_start(2) = min(clim_start(2), clim(2));
 clim_start(1) = max(clim_start(1), clim(1)+1);
 
-cur_fig = figure('units','normalized','outerposition',[0 0 1 1]);
+% parse input 
+p = inputParser;
 
-if nargin>1                                %set colormap
-    colormap(varargin{1});
+addRequired(p,'img');
+addParameter(p,'colormap',colormap('Gray'), @(map)iptcheckmap(map, 'plot_image_ui', 'colormap', 'doesnt matter') ); 
+addParameter(p,'type','figure', @ischar ); 
+
+parse(p, image, varargin{:});
+
+%check type request, create appropriate class object
+if strcmp(p.Results.type,'image')
+    cur_fig = imagesc(img, clim_start); colorbar, axis image 
 else
-    colormap('Gray');
+    cur_fig = figure('units','normalized','outerposition',[0 0 1 1]);
+    set(cur_fig,'toolbar','figure');
+    imagesc(img, clim_start); colorbar, axis image
 end
 
-imagesc(img, clim_start), colorbar, axis image % plot
-set(cur_fig,'toolbar','figure')
+%apply colormap
+colormap(p.Results.colormap);
+
 axisHandle = gca;
 
 stepSize=[0.001 0.01];          %slider minor and major stepsizes
 %create slider objects
 slider_upperLimit=uicontrol('Style', 'slider', 'Min', clim(1),'Max', clim(2),'Value', clim_start(2), 'SliderStep', stepSize,'Position', [1 50 500 20],'Callback', {@lim_high,axisHandle});  %slider upper limit 
 slider_lowerLimit=uicontrol('Style', 'slider', 'Min', clim(1),'Max', clim(2),'Value', clim_start(1), 'SliderStep', stepSize,'Position', [1 30 500 20],'Callback', {@lim_low,axisHandle});   %slider lower limit
-uicontrol('Style', 'slider', 'Min', clim(1)+stepSize(1),'Max', clim(2),'Value', clim(2), 'SliderStep', stepSize,'Position', [1 0 500 20],'Callback', {@lim_range,axisHandle,slider_upperLimit,slider_lowerLimit});   %slider multplier
+uicontrol('Style', 'slider', 'Min', stepSize(1),'Max', 1,'Value', 1, 'SliderStep', stepSize,'Position', [1 0 500 20],'Callback', {@lim_range,axisHandle,slider_upperLimit,slider_lowerLimit});   %slider multplier
 
 function lim_high(hObj,event,ax) %#ok<INUSL>
     % Called to set upper zlim of surface in figure axes
@@ -52,24 +65,41 @@ function lim_low(hObj,event,ax) %#ok<INUSL>
 end
 
 function lim_range(hObj,event,ax, slider_upperLimit,slider_lowerLimit) %#ok<INUSL>
-    % Called to set range for zlim of surface in figure axes
-    % when user moves the slider control, rescales lower and upper limit sliders, then adjusts lower and upper limit
+    % Called to set range of data for zlim selection.
+    % when user moves the slider control, rescales data range for limit sliders towards/away from center of current limits
+    % then adjusts current lower and upper limit if they are beyond new data range
     val =  get(hObj,'Value');
-    
-    min_cur= get(slider_upperLimit,'Min');
-    max_cur= get(slider_upperLimit,'Max');
     
     upperLimit_cur =get(slider_upperLimit,'Value');
     lowerLimit_cur =get(slider_lowerLimit,'Value');
     
-    upperLimit_new=min_cur+(upperLimit_cur-min_cur)*(val-min_cur)/(max_cur-min_cur);
-    lowerLimit_new=min_cur+(lowerLimit_cur-min_cur)*(val-min_cur)/(max_cur-min_cur);
+    center=(lowerLimit_cur+upperLimit_cur)/2;
     
+    width_new=(clim(2)-clim(1))*val;
+    
+    min_new=center-width_new/2;
+    max_new=center+width_new/2;
+    
+    if min_new<clim(1)
+        min_new=clim(1);
+        max_new=min_new+width_new;
+    end
+    
+    if max_new>clim(2)
+        max_new=clim(2);
+        min_new=max_new-width_new;
+    end
+       
+    upperLimit_new=min(max_new,upperLimit_cur);
+    lowerLimit_new=max(min_new,lowerLimit_cur);
+   
     set(slider_upperLimit,'Value',upperLimit_new);
-    set(slider_upperLimit,'Max',val);
+    set(slider_upperLimit,'Max',max_new);
+    set(slider_upperLimit,'Min',min_new);
 
-    set(slider_lowerLimit,'Value',min_cur+(lowerLimit_cur-min_cur)*(val-min_cur)/(max_cur-min_cur));
-    set(slider_lowerLimit,'Max',val);
+    set(slider_lowerLimit,'Value',lowerLimit_new);
+    set(slider_lowerLimit,'Max',max_new);
+    set(slider_lowerLimit,'Min',min_new);
     
     clim_set = [ lowerLimit_new upperLimit_new ];
     set(ax, 'CLim',   clim_set);
