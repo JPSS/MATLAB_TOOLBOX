@@ -20,10 +20,10 @@ addRequired(p,'img');
 addParameter(p,'colormap',colormap('Gray'), @(map)iptcheckmap(map, 'plot_image_ui', 'colormap', 'doesnt matter') ); 
 addParameter(p,'type','figure', @ischar ); 
 
-parse(p, image, varargin{:});
+parse(p, img, varargin{:});
 
 %check type request, create appropriate class object
-if strcmp(p.Results.type,'image')==0
+if strcmp(p.Results.type,'image')
     cur_fig = imagesc(img, clim_start); colorbar, axis image 
 else
     cur_fig = figure('units','normalized','outerposition',[0 0 1 1]);
