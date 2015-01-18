@@ -45,11 +45,20 @@ function [ I_mean, areas ] = integrate_areas(img, n_areas, varargin)
         img_show = img_show + plot_factor(i) .* img{i};
     end
     
+    
     % select areas by hand
     cur_fig = plot_image_ui(img_show); % show image
+    
+    % Create back-button
+    Back_button = uicontrol('Style', 'pushbutton', 'String', 'Back',...
+        'Position', [600 20 50 20],... %location, values based on plot_image_gui
+        'Callback', @back);     
+    
     title({message, ['Resizable = ' num2str((resizable)) ', plot_weights = ' num2str(plot_factor)]})
-    for i=1:n_areas
-        % select area
+    i = 1;
+    my_rectangles = cell(n_areas,1); % cell that stores all rectangle objects
+    index_tex = cell(n_areas,1); % cell that stores all text objects
+    while i <= n_areas
         if i==1
             h = imrect; % new area
         else
@@ -63,16 +72,30 @@ function [ I_mean, areas ] = integrate_areas(img, n_areas, varargin)
         wait(h);
         pos = int32(getPosition(h)); % get position of current area[xmin ymin width height]
         delete(h)
-        areas(i,:) = pos; % set output
         
+
+        areas(i,:) = pos; % set output
+
         %integrate channels and devide by area
         for j= 1:max(size(img))
             I_mean(i,j) = sum(sum((img{j}(pos(2):pos(2)+pos(4)  , pos(1):pos(1)+pos(3))))) ./ pos(3) ./ pos(4); %integrate
         end
-        
+
         % plot selected area
-        rectangle('Position', areas(i,:), 'EdgeColor', 'r'); %plot all integrated areas
-        text(areas(i, 1)+areas(i,3)/2, areas(i, 2)+areas(i,4)/2, num2str(i), 'Color', 'r', 'VerticalAlignment', 'Middle', 'HorizontalAlignment', 'Center') 
+        my_rectangles{i} = rectangle('Position', areas(i,:), 'EdgeColor', 'r'); %plot all integrated areas
+        index_tex{i} = text(areas(i, 1)+areas(i,3)/2, areas(i, 2)+areas(i,4)/2, num2str(i), ...
+            'Color', 'r', 'VerticalAlignment', 'Middle', 'HorizontalAlignment', 'Center') ; % plot index of band
+        i = i+1; % increment counter
+        
     end
     close(cur_fig)
+    
+    % callback function for back-button
+    function back(source,callbackdata)
+        my_rectangles{i-1}.delete; % delete previous rectangle
+        index_tex{i-1}.delete; % delete number
+        i = i-1; %decrement counter
+    end
+    
+    
 end
