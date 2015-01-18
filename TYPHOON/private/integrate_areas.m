@@ -92,9 +92,13 @@ function [ I_mean, areas ] = integrate_areas(img, n_areas, varargin)
     
     % callback function for back-button
     function back(source,callbackdata)
-        my_rectangles{i-1}.delete; % delete previous rectangle
-        index_tex{i-1}.delete; % delete number
-        i = i-1; %decrement counter
+        if i > 1
+            my_rectangles{i-1}.delete; % delete previous rectangle
+            index_tex{i-1}.delete; % delete number
+            i = i-1; %decrement counter
+        else
+            disp('Can not go back. Already at first areas.')
+        end
     end
     
     
