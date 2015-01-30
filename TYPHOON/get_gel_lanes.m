@@ -7,6 +7,7 @@ function gelData = get_gel_lanes(imageData,varargin)
 %   .profiles is cell array {nr_image,nr_lane} of lane profiles (horizontal integrals)
 %   .lanePositions is array nr_lanes * [left edge, right edge, top edge, bottom edge]
 %   .imageNames is cell array of image name strings
+%   .fullProfiles is cell array {nr_image,nr_lane} of lane profiles (horizontal integrals) over entire gel image vertical length
 
 %% load image weight factors
 
@@ -147,8 +148,10 @@ close all
 
 %% calculate lane profiles (horizontal integrals) for each lane
 %   laneProfiles is array of lanes integrated horizontally over fitted lane size
+%   fullLaneProfiles is array of lanes integrated horizontally over fitted lane size horizontally over the entire gel vertically
 
-laneProfiles=cell(imageData.nrImages,nr_lanes);  %zeros(selectedArea(4),size(lanePositions,1),nr_images);
+laneProfiles=cell(imageData.nrImages,nr_lanes);
+fullLaneProfiles=cell(imageData.nrImages,nr_lanes);
 
 for curr_image=1:imageData.nrImages
     hold all
@@ -158,6 +161,8 @@ for curr_image=1:imageData.nrImages
 
     for curr_lane=1:size(lanePositions,1)
         laneProfiles{curr_image,curr_lane}=sum(tempArea(1:selectedArea(4),lanesFitted(curr_lane,1):lanesFitted(curr_lane,2)),2);
+        fullLaneProfiles{curr_image,curr_lane}=sum(tempImage(:,lanesFitted(curr_lane,1):lanesFitted(curr_lane,2)),2);
+        
         plot(laneProfiles{curr_image,curr_lane})
         title('fitted profiles - press any key');
     end
@@ -175,5 +180,5 @@ for i=1:nr_lanes
     lanePositions(i,4)=selectedArea(2)+selectedArea(4);
 end
 
-gelData=struct('profiles',{laneProfiles},'lanePositions',lanePositions,'imageNames',{imageData.filenames});
+gelData=struct('profiles',{laneProfiles},'lanePositions',lanePositions,'imageNames',{imageData.filenames},'fullProfiles',{fullLaneProfiles});
 end
