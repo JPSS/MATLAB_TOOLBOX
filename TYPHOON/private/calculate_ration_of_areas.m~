@@ -1,4 +1,4 @@
-function [ p_fit, A_sub, B_sub] = calculate_ration_of_areas( A, B_in, status )
+function [ p_fit, A_sub, B_sub] = calculate_ration_of_areas( A, B_in, varargin )
 % Calculates the ration of subimage A to subimage B based on a scattered
 % plot and a linear fit. 
 %  - This method should be more robust to errors in bakcground corretion.
@@ -7,7 +7,8 @@ function [ p_fit, A_sub, B_sub] = calculate_ration_of_areas( A, B_in, status )
 % Input:    A = channel 1 of image (or subimage)
 %           B_in = channel 2 of image (or subimage)
 %           display_plot (optional) 
-% Example: calculateRation(A, B, 0)
+% Example:  calculateRation(A, B)
+%           calculateRation(A, B, 'display', 'on')
 
     % parse input variables
     p = inputParser;
@@ -19,8 +20,12 @@ function [ p_fit, A_sub, B_sub] = calculate_ration_of_areas( A, B_in, status )
     addParameter(p,'display', default_display,  @(x) any(validatestring(x,expected_display))); % check display is 'on' or 'off'
 
     parse(p, A, B_in, varargin{:});
-    display_bool = strcmp(p.Results.display, 'on')
+    display_bool = strcmp(p.Results.display, 'on');
 
+    % check for sizes of images
+    if (size(A,1)==size(B_in,1)) && (size(A,2)==size(B_in,2))
+        disp('Warning: A and B do not have the same size.')
+    end
     % Find best overlay of images
     [cc, shift, B] = xcorr2_bounded(A, B_in, 5, 0); % find the best overlay of images with +- 5 pixel
     

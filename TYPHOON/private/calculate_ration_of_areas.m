@@ -5,7 +5,7 @@ function [ p_fit, A_sub, B_sub] = calculate_ration_of_areas( A, B_in, varargin )
 %  - It also overlays the two images to reduce shift-errores
 % 
 % Input:    A = channel 1 of image (or subimage)
-%           B_in = channel 2 of image (or subimage)
+%           B_in = channel 2 of image, must have same size as A
 %           display_plot (optional) 
 % Example:  calculateRation(A, B)
 %           calculateRation(A, B, 'display', 'on')
@@ -22,6 +22,10 @@ function [ p_fit, A_sub, B_sub] = calculate_ration_of_areas( A, B_in, varargin )
     parse(p, A, B_in, varargin{:});
     display_bool = strcmp(p.Results.display, 'on');
 
+    % check for sizes of images
+    if ~( (size(A,1)==size(B_in,1)) && (size(A,2)==size(B_in,2)) )
+        disp('Warning: A and B do not have the same size.')
+    end
     % Find best overlay of images
     [cc, shift, B] = xcorr2_bounded(A, B_in, 5, 0); % find the best overlay of images with +- 5 pixel
     
