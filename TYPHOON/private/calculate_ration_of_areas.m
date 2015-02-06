@@ -46,8 +46,8 @@ function [ p_fit, A_sub, B_sub] = calculate_ration_of_areas( A, B_in, varargin )
        figure();
         x = [min([B_sub(:); B_in(:)]) max([B_sub(:); B_in(:)])];
         p_raw = polyfit(B_in(:), A(:), 1);
-        plot(B_in(:), A(:), 'b.', x, p_raw(1)*x+p_raw(2), 'b', B_sub(:), A_sub(:), 'r.', x, p_fit(1)*x+p_fit(2), 'r')   
-        legend({'Data raw', 'Fit to raw data', 'Shifted data', 'Fit to shifted data'})
+        plot(B_in(:), A(:), 'b+', B_sub(:), A_sub(:), 'r.', x, p_raw(1)*x+p_raw(2), 'k--', x, p_fit(1)*x+p_fit(2), 'k-')   
+        legend({'Data raw', 'Shifted data', 'Fit to raw data', 'Fit to shifted data'})
         xlabel('Channel B'), ylabel('Channel A')
    end
 end
