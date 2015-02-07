@@ -25,7 +25,7 @@ parse(p, dd, da, aa, varargin{:});
 display_plot = strcmp(p.Results.display, 'on');
 
 %% Integrate D-only and A-only band
-[I_mean, areas] = integrate_areas({dd, da, aa}, 2); %cell of images, number of bands
+[I_mean, areas] = integrate_areas({dd, da, aa}, 2, 'message', 'Select D-only and A-only area.'); %cell of images, number of bands
 
 
 
