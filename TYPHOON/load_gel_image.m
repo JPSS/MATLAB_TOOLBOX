@@ -3,6 +3,7 @@ function imageData = load_gel_image(varargin)
 %   INPUTS: 
 %   'data_dir' (optional parameter) = initial directory, where data is
 %   stored
+%   'n_images' (optional parameter) = number of images to load
 %   OUTPUT:
 %   imageData struct with .images .pathnames .filenames .nrImages
 %   .nrImages is number of images
@@ -16,15 +17,21 @@ function imageData = load_gel_image(varargin)
 p = inputParser;
 default_data_dir = userpath; % default data directory is userpath
 default_data_dir=default_data_dir(1:end-1);
+
 addParameter(p,'data_dir',default_data_dir, @isstr); 
+addParameter(p,'n_images', -1 ,@isnumeric) % n_images, default is -1
 
 parse(p,  varargin{:});    
 data_dir = p.Results.data_dir;  % default data location
+nrImages = p.Results.n_images; % set number of images
 
 %% select image data
 init_path = cd; %remember initial/current path
-temp = inputdlg({'How many images (channels) do you want to load:'}, 'How many images (channels) do you want to load?', 1, {'1'});
-nrImages = str2double(temp(1));
+
+if nrImages <= 0 % ask how many images user wants to load
+    temp = inputdlg({'How many images (channels) do you want to load:'}, 'How many images (channels) do you want to load?', 1, {'1'});
+    nrImages = str2double(temp(1));
+end
 
 filenames = cell(nrImages, 1);
 pathnames = cell(nrImages, 1);
