@@ -1,15 +1,8 @@
 %% startup
 clear all; close all; clc;
+path0=cd;
+data_dir = cd;
 
-%run('my_prefs'); 
- path0=cd;
- data_dir = cd;
- %scrsz = get(0,'ScreenSize'); % screen size
- %addpath('/Users/jonasfunke/Documents/MATLAB_old/TOOLBOX_GENERAL')
- %addpath('/Users/jonasfunke/Documents/MATLAB_old/TOOLBOX_MOVIE')
- %addpath('/Users/jonasfunke/Documents/MATLAB_old/TEM_applications')
- %addpath('/Users/jonasfunke/Documents/MATLAB_old/TOOLBOX_TEM/spider_matlab')
- %addpath('/Users/jonasfunke/Documents/MATLAB_old/TOOLBOX_TEM/EMIODist')
 %% parameters
 input = {'Box size [pixel]:', 'Number of class references:', 'Include mirror (0=no, 1=yes):',... % sample options
     'Binning:', 'Radius of high-pass filter [pixel]:', 'Angel resolution [deg]:'};
@@ -33,239 +26,19 @@ img_size = 2048/n_bin; %size of the binned image
 refine = 1; % dismiss particles with low correlation
 
 %% load images
-pname=uigetdir(data_dir,'Choose a folder with tem images.'); % get pathname
-tmp = dir([pname filesep '*_16.TIF']);
-fnames = {tmp.name}; % list of filenames
-n_img = size(fnames,2);
+[images, pname] = load_tem_images(img_size, r_filter);
+
+%% create output directory
 path_out = [pname filesep datestr(now, 'yyyy-mm-dd_HH-MM') '_particles']; % output folder
 mkdir(path_out)
-
-% determine prefix
-prefix  = strsplit(pname, filesep);
+prefix  = strsplit(pname, filesep); % determine prefix
 prefix = prefix{end};
 
-%% load, filter and crop images
-disp(['Loading and filtering ' num2str(n_img) ' images...'])
-images = zeros(img_size, img_size, n_img);
-if r_filter > 0
-    f_filter = fspecial('gaussian', r_filter*4*2 , r_filter); % gaussian filter, diameter = 2*(width = 4*sigma)
-end
-h = waitbar(0,'Loading and filtering images... ? time remaining');
-tic
-for i=1:n_img
-    img = imread([pname filesep fnames{i}], 'PixelRegion', {[1 2048], [1 2048]});
-    if r_filter > 0
-        tmp = double(img)-double(imfilter(img, f_filter, 'same'));
-    else
-        tmp = double(img);
-    end
-    images(:,:,i) = imresize(tmp,[img_size img_size], 'nearest'); %bin image 4x4 for faster image processing
-    %images(:,:,i) = imresize(img(1:2048,1:2048),[512 512], 'nearest'); %bin image 4x4 for faster image processing
-    if i==1
-        dt = toc;
-        tic;
-    else
-        dt_this = toc;
-        dt = (dt+dt_this)/2;
-        tic;
-    end
-    
-    n_remain = n_img-i;
-    waitbar( i/n_img , h, ['Loading and filtering images... ' num2str(round(n_remain*dt/60*10)/10) ' min remaining'])
-
-end
-toc;
-close(h); close all;
-
 %% create class references
-box_size_template = ceil(2*box_size/2/cos(pi/4));%200;
-box_size_template = int16(box_size_template + mod(box_size_template, 2) +1 ) ; % make it even
-templates = zeros(box_size_template, box_size_template, n_ref);
-w = (box_size_template-1)/2;
-for i=1:n_ref/(mirror+1) 
-    go_on = 1;
-    j = 1;
-    close all
-    figure('units','normalized','outerposition',[0 0 1 1]);
+[templates ] = select_reference( images, box_size, n_ref, mirror, path_out);
 
-    while go_on 
-        imagesc(images(:,:,j)), axis image, colormap gray
-        button = questdlg(['Select an image for ref. ' num2str(i)],'Image','Use this','Previous','Next', 'Use this');
-        if strcmp(button, 'Next')
-            j = min(n_img,j+1);
-        end
-        if strcmp(button, 'Previous')
-            j = max(j-1, 1);
-        end
-        if strcmp(button, 'Use this')
-            go_on = 0;
-        end
-    end
-    % select particle
-    h = imrect(gca, [img_size/2 img_size/2 double(box_size_template) double(box_size_template)]);
-    setResizable(h,0) 
-    pos = int16(wait(h));
-
-    
-    %refine reference
-    r = double(box_size/2);
-    template = images(pos(2):pos(2)+pos(4), pos(1):pos(1)+pos(3),j);
-    close all
-    imagesc( [pos(1) pos(1)+pos(3)], [pos(2) pos(2)+pos(4)],template), colorbar, colormap gray, axis image
-    cur_fig = gca;
-    h = impoint(gca,[pos(1)+box_size_template/2 pos(2)+box_size_template/2]);
-    setColor(h, [1 0 0])
-    b = ellipse(r, r, 0, double(pos(1)+box_size_template/2), double(pos(2)+box_size_template/2));
-    set(b, 'Color', [1 0 0])
-    addNewPositionCallback(h, @(pos) update_ellipse(pos, r, cur_fig) );
-    c = round(wait(h));
-    close all
-    
-    area = [c(2)-w c(2)+w c(1)-w c(1)+w];
-    if mirror
-        templates(:,:,2*i-1) = images(area(1):area(2), area(3):area(4), j);
-        templates(:,:,2*i) = flipdim(images(area(1):area(2), area(3):area(4), j) ,1);
-    else
-        templates(:,:,i) = images(area(1):area(2), area(3):area(4), j);
-    end
- 
-end
-
-%% display and write templates
-path_out_templates = [path_out filesep 'reference_particles'];
-mkdir(path_out_templates)
-dx = (box_size_template-box_size-1)/2;
-close all
-for i=1:n_ref
-    subplot(n_ref/(mirror+1),mirror+1,i)
-    imagesc(templates(dx:dx+box_size, dx:dx+box_size,i)),  colormap gray, axis image
-    tmp_out = templates(dx:dx+box_size, dx:dx+box_size,i)-min(min(templates(dx:dx+box_size, dx:dx+box_size,i)));
-    imwrite(  uint16(tmp_out*(2^16-1)/max(tmp_out(:))) , [path_out_templates filesep 'ref_' num2str(i) '.tif' ]);
-end
-
-
-%% Calculate X-Correlation and find maximum correlations
-disp('Calculating x-correlation...')
-alpha = 0:dalpha:359;
-n_rot = length(alpha); % number of rotations
-dx = int16((box_size_template-box_size-1)/2);
-
-peaks = cell(n_ref, n_img);
-peaks2 = cell(n_ref, n_img);
-
-h = waitbar(0,'Calculating x-correlation... ? time remaining');
-
-for t=1:n_ref
-    % generate library
-    lib = zeros(box_size+1, box_size+1, length(alpha));
-    for j=1:n_rot
-        tmp = imrotate(templates(:,:,t), alpha(j), 'crop');
-        lib(:,:,j) = tmp(dx:dx+box_size, dx:dx+box_size);
-    end
-
-    %loop through images
-    img3 = zeros(img_size, img_size, n_img); % stores maximum of cor-coef of all rotations
-    img3_index = zeros(img_size, img_size, n_img); % stores index of maximum
-    
-    for i=1:n_img
-        tic
-        xcor_img = zeros(img_size, img_size, n_rot);
-        
-        for r=1:n_rot % loop through rotations
-            tmp = normxcorr2(lib(:,:,r), images(:,:,i)); % x-correlate
-            xcor_img(:,:,r) = tmp(box_size/2+1:end-box_size/2, box_size/2+1:end-box_size/2);
-        end
-        
-
-        for k=1:512
-        for l=1:512
-            [cmax, imax] = max(xcor_img(k,l,:));
-            img3(k,l,i) = cmax;
-            img3_index(k,l,i) = imax;
-        end
-        end
-
-        %find peaks in img3
-        tmp = img3(box_size/2+1:end-box_size/2, box_size/2+1:end-box_size/2,i);
-        h_min = mean(tmp(:)) + 0.25*std(tmp(:));
-    
-        p = find_peaks2d(tmp, round(box_size/4), h_min, 0); % radius of window, minimal height,  no absolure = relative height
-        if length(p) > 0
-            p(:,1:2) = p(:,1:2)+box_size/2+1;
-            tmp = img3(:,:,i);
-            tmp_index = img3_index(:,:,i);
-            idx = sub2ind(size(tmp), p(:,2), p(:,1) );
-            peaks{t,i} = [p(:,1:2) tmp(idx) alpha(tmp_index(idx))']; % x y coer_coef alpha 
-
-            display(['Reference (' num2str(t) '/' num2str(n_ref) '): image (' num2str(i) '/' num2str(n_img) '), found ' num2str(size(p,1)) ' particles' ])
-
-        end
-
-        if t==1 && i==1
-            dt = toc;
-        else
-            dt_this = toc;
-            dt = (dt+dt_this)/2;
-        end
-        frac = ((t-1)*n_img+i) / (n_ref*n_img);
-        n_remain = (n_ref*n_img)-((t-1)*n_img+i);
-        waitbar( frac , h, ['Calculating x-correlation... ' num2str(round(n_remain*dt/60*10)/10) ' min remaining']) 
-    end
-end
-pause(0.1)
-close(h)
-close all
-
-
-%% remove particles, which belong to multiple classes
-%cc = varycolor(n_ref);
-peaks_ref = cell(n_ref, n_img);
-h = waitbar(0,'Searching for particles... ');
-
-for i=1:n_img
-    disp(['refining ' num2str(i) ])
-    
-    % genertate image of  correlations
-    cor_img = zeros(img_size,img_size );
-    cor_img_index = zeros(img_size,img_size );
-    rot_img = zeros(img_size,img_size );
-    for r=1:n_ref
-        idx = sub2ind(size(cor_img), peaks{r,i}(:,2), peaks{r,i}(:,1) );
-        cor_img(idx) = peaks{r,i}(:,3);
-        cor_img_index(idx) = r;
-        rot_img(idx) = peaks{r,i}(:,4);
-
-    end
-    
-    
-    
-    p = find_peaks2d(cor_img, round(box_size/4), 0, 1 ); % find-peaks, width, min_height, absolute height 
-    p(:,1:2) =  p(:,1:2)+1;
-   
-    
-    for j=1:size(p,1)
-        peaks_ref{cor_img_index(p(j,2),p(j,1)),i} = [peaks_ref{cor_img_index(p(j,2),p(j,1)),i}; p(j,1:2) cor_img(p(j,2),p(j,1)) rot_img(p(j,2),p(j,1)) ];
-    end
-    
-    %{
-     close all
-    imagesc(cor_img), colorbar,  colormap gray, axis image, hold on % img2
-
-    for r=1:n_ref
-        plot(peaks{r,i}(:,1), peaks{r,i}(:,2),  'o', 'color', cc(r,:))
-        plot(peaks_ref{r,i}(:,1), peaks_ref{r,i}(:,2),  '.', 'color', cc(r,:));
-
-    end
-    pause 
-    %}
-    
-    waitbar( i/n_img , h, 'Searching for particles... ')
-
-    
-end
-close(h);
-pause(0.1);
-    
+%% Find particles using X-Correlation and find maximum correlations
+[peaks_ref, peaks, img3] = find_particles(templates, images, dalpha , box_size);  
    
 
 %% display images and found particles

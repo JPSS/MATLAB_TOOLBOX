@@ -1,15 +1,8 @@
 %% startup
 clear all; close all; clc;
+path0=cd;
+data_dir = cd;
 
-%run('my_prefs'); 
- path0=cd;
- data_dir = cd;
- %scrsz = get(0,'ScreenSize'); % screen size
- %addpath('/Users/jonasfunke/Documents/MATLAB_old/TOOLBOX_GENERAL')
- %addpath('/Users/jonasfunke/Documents/MATLAB_old/TOOLBOX_MOVIE')
- %addpath('/Users/jonasfunke/Documents/MATLAB_old/TEM_applications')
- %addpath('/Users/jonasfunke/Documents/MATLAB_old/TOOLBOX_TEM/spider_matlab')
- %addpath('/Users/jonasfunke/Documents/MATLAB_old/TOOLBOX_TEM/EMIODist')
 %% parameters
 input = {'Box size [pixel]:', 'Number of class references:', 'Include mirror (0=no, 1=yes):',... % sample options
     'Binning:', 'Radius of high-pass filter [pixel]:', 'Angel resolution [deg]:'};
@@ -30,51 +23,18 @@ end
 box_size = box_size_real/n_bin; % size of particle, HAS TO BE EVEN
 img_size = 2048/n_bin; %size of the binned image
 
+refine = 1; % dismiss particles with low correlation
 
 %% load images
-pname=uigetdir(data_dir,'Choose a folder with tem images.'); % get pathname
-tmp = dir([pname filesep '*_16.TIF']);
-fnames = {tmp.name}; % list of filenames
-n_img = size(fnames,2);
+[images, pname] = load_tem_images(img_size, r_filter);
+
+%% create output directory
 path_out = [pname filesep datestr(now, 'yyyy-mm-dd_HH-MM') '_particles']; % output folder
 mkdir(path_out)
-
 % determine prefix
 prefix  = strsplit(pname, filesep);
 prefix = prefix{end};
 
-%% load, filter and crop images
-disp(['Loading and filtering ' num2str(n_img) ' images...'])
-images = zeros(img_size, img_size, n_img);
-if r_filter > 0
-    f_filter = fspecial('gaussian', r_filter*4*2 , r_filter); % gaussian filter, diameter = 2*(width = 4*sigma)
-end
-h = waitbar(0,'Loading and filtering images... ? time remaining');
-tic
-for i=1:n_img
-    img = imread([pname filesep fnames{i}], 'PixelRegion', {[1 2048], [1 2048]});
-    if r_filter > 0
-        tmp = double(img)-double(imfilter(img, f_filter, 'same'));
-    else
-        tmp = double(img);
-    end
-    images(:,:,i) = imresize(tmp,[img_size img_size], 'nearest'); %bin image 4x4 for faster image processing
-    %images(:,:,i) = imresize(img(1:2048,1:2048),[512 512], 'nearest'); %bin image 4x4 for faster image processing
-    if i==1
-        dt = toc;
-        tic;
-    else
-        dt_this = toc;
-        dt = (dt+dt_this)/2;
-        tic;
-    end
-    
-    n_remain = n_img-i;
-    waitbar( i/n_img , h, ['Loading and filtering images... ' num2str(round(n_remain*dt/60*10)/10) ' min remaining'])
-
-end
-toc;
-close(h); close all;
 
 %% create class references
 box_size_template = ceil(2*box_size/2/cos(pi/4));%200;
@@ -109,7 +69,6 @@ for i=1:n_ref/(mirror+1)
     %refine reference
     r = double(box_size/2);
     template = images(pos(2):pos(2)+pos(4), pos(1):pos(1)+pos(3),j);
-    %%
     close all
     imagesc( [pos(1) pos(1)+pos(3)], [pos(2) pos(2)+pos(4)],template), colorbar, colormap gray, axis image
     cur_fig = gca;
@@ -119,7 +78,8 @@ for i=1:n_ref/(mirror+1)
     set(b, 'Color', [1 0 0])
     addNewPositionCallback(h, @(pos) update_ellipse(pos, r, cur_fig) );
     c = round(wait(h));
- %%
+    close all
+    
     area = [c(2)-w c(2)+w c(1)-w c(1)+w];
     if mirror
         templates(:,:,2*i-1) = images(area(1):area(2), area(3):area(4), j);
@@ -129,7 +89,6 @@ for i=1:n_ref/(mirror+1)
     end
  
 end
-close all
 
 %% display and write templates
 path_out_templates = [path_out filesep 'reference_particles'];
@@ -143,8 +102,6 @@ for i=1:n_ref
     imwrite(  uint16(tmp_out*(2^16-1)/max(tmp_out(:))) , [path_out_templates filesep 'ref_' num2str(i) '.tif' ]);
 end
 
-%% ask if one wants to refine selection
-refine = 1; %strcmp(questdlg('Dismiss particles with low correlation?','Refinement','Yes','No','No'), 'Yes');  
 
 %% Calculate X-Correlation and find maximum correlations
 disp('Calculating x-correlation...')
@@ -217,18 +174,6 @@ end
 pause(0.1)
 close(h)
 close all
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 %% remove particles, which belong to multiple classes
@@ -490,8 +435,8 @@ disp('Writing particles...')
 
 for t=1:n_ref/(mirror+1)
     % write as spider-file
-    writeSPIDERfile([path_out filesep prefix '_ref_' num2str(t) '.spi'], data_refined(t).particles, 'stack')
-    writeSPIDERfile([path_out filesep prefix '_ref_' num2str(t) '_rot.spi'], data_refined(t).particles_rot, 'stack')
+    %writeSPIDERfile([path_out filesep prefix '_ref_' num2str(t) '.spi'], data_refined(t).particles, 'stack')
+    %writeSPIDERfile([path_out filesep prefix '_ref_' num2str(t) '_rot.spi'], data_refined(t).particles_rot, 'stack')
   
     % write a img file
     WriteImagic(data_refined(t).particles, [path_out filesep prefix '_ref_' num2str(t)])
@@ -499,31 +444,29 @@ for t=1:n_ref/(mirror+1)
     % write as single tif-files
     path_out_tif1 = [path_out filesep prefix '_ref_' num2str(t) '_tif'];
     path_out_tif2 = [path_out filesep prefix '_ref_' num2str(t) '_rot_tif'];
-    path_out_spi = [path_out filesep prefix '_ref_' num2str(t) '_spi'];
+    %path_out_spi = [path_out filesep prefix '_ref_' num2str(t) '_spi'];
     
     mkdir(path_out_tif1)
     mkdir(path_out_tif2)
-    mkdir(path_out_spi)
+    %mkdir(path_out_spi)
     
     for i=1:size(data_refined(t).particles, 3)
         imwrite(data_refined(t).particles(:,:,i), [path_out_tif1 filesep 'ref_' num2str(t) '_' sprintf('%.3i',i) '.tif' ]);
         imwrite(data_refined(t).particles_rot(:,:,i), [path_out_tif2 filesep 'ref_' num2str(t) '_' sprintf('%.3i',i) '.tif' ]);
-        writeSPIDERfile([path_out_spi filesep 'ref_' num2str(t) '_' sprintf('%.3i',i) '.spi' ], data_refined(t).particles(:,:,i))
+        %writeSPIDERfile([path_out_spi filesep 'ref_' num2str(t) '_' sprintf('%.3i',i) '.spi' ], data_refined(t).particles(:,:,i))
     end
 end
 
 %% write all particles
 % write as spider-file
-writeSPIDERfile([path_out filesep 'all.spi'], cat(3,data.particles), 'stack')
+%writeSPIDERfile([path_out filesep 'all.spi'], cat(3,data.particles), 'stack')
 
 
 %% write as img file
 WriteImagic(cat(3,data.particles), [path_out filesep 'all'])
 
-%%
-
-
-% write as single tif-files
+%% write as single tif-files
+%{
 path_out_tif = [path_out filesep 'all_tif'];
 mkdir(path_out_tif)
 m = 1;
@@ -533,14 +476,14 @@ for t=1:n_ref/(mirror+1)
         m = m+1;
     end
 end
+%}
 
 %% display images and found particles
 disp('Plotting images...')
 
 cc = varycolor(n_ref);
 close all
-fig_dim =2*[20 10];
-cur_fig = figure('Visible','off', 'PaperPositionMode', 'manual','PaperUnits','centimeters','PaperPosition', [0 0 fig_dim(1) fig_dim(2)], 'Position', [0 scrsz(4) fig_dim(1)*40 fig_dim(2)*40]);
+cur_fig = figure('Visible', 'off', 'OuterPosition', [0 0 1000 800]); 
 
 myleg = cell(n_ref,1);
 for t=1:n_ref
@@ -582,6 +525,5 @@ for i=1:n_img
 end
 
 
-%%
 disp('finished')
 
