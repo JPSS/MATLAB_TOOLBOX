@@ -92,7 +92,7 @@ currentTemperatures=InstrumentDataTemperatures(currentPos,:);
 currentLength=1;                                                %current number of measurements at current measurement cycle
 
 while currentPos~=filterMeasurementNumber                       %average over multiple measurements at one measurement cycle
-    if isequal(sortedDataCell(currentPos,6),sortedDataCell(currentPos+1,6)) %add another measurement to measurement cycle
+    if isequal(sortedDataCell(currentPos,6),sortedDataCell(currentPos+1,6)) && isequal(sortedDataCell(currentPos,3),sortedDataCell(currentPos+1,3)) %add another measurement to measurement cycle
         currentValues=currentValues+InstrumentData(currentPos+1,:);
         currentTemperatures=currentTemperatures+InstrumentDataTemperatures(currentPos+1,:);
         currentLength=currentLength+1;
