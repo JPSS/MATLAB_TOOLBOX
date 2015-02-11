@@ -161,7 +161,7 @@ for curr_image=1:imageData.nrImages
 
     for curr_lane=1:size(lanePositions,1)
         laneProfiles{curr_image,curr_lane}=sum(tempArea(1:selectedArea(4),lanesFitted(curr_lane,1):lanesFitted(curr_lane,2)),2);
-        fullLaneProfiles{curr_image,curr_lane}=sum(tempImage(:,lanesFitted(curr_lane,1):lanesFitted(curr_lane,2)),2);
+        fullLaneProfiles{curr_image,curr_lane}=sum(tempImage(:,selectedArea(1)-1+lanesFitted(curr_lane,1):selectedArea(1)-1+lanesFitted(curr_lane,2)),2);
         
         plot(laneProfiles{curr_image,curr_lane})
         title('fitted profiles - press any key');
