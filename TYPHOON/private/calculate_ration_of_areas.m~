@@ -41,7 +41,7 @@ function [ p_fit, A_sub, B_sub] = calculate_ration_of_areas( A, B_in, varargin )
     % Fit a line to the scattered points ot obtain slope and offset
     p_fit = polyfit(B_sub(:), A_sub(:), 1);
         % scatter plot of data (if desired
-   
+   keyboard
    %%
     if display_bool
        figure();
@@ -54,15 +54,16 @@ function [ p_fit, A_sub, B_sub] = calculate_ration_of_areas( A, B_in, varargin )
         t_a = mean(a_tmp);
         t_b = mean(b_tmp);
         ab = [a_tmp, b_tmp];
-        ab_sort = ab(ab(:,1)>t_a & ab(:,2)>t_b, :);
+        ab_1 = ab(ab(:,1)>t_a, :);
+        b_tmp_g = b_tmp(b_tmp>mean(b_tmp));
         
-        p_g = polyfit(ab_sort(:,2), ab_sort(:,1), 1);
+        p_g = polyfit(b_tmp_g, a_tmp_g, 1);
 
         subplot(4, 4, [1:3, 5:7, 9:11])
-        plot(B_in(:), A(:), 'b+', B_sub(:), A_sub(:), 'r.', x, p_raw(1)*x+p_raw(2),  'k--',ab_sort(:,2), ab_sort(:,1), 'g.', x, p_fit(1)*x+p_fit(2), 'k-', x, p_g(1)*x+p_g(2), 'b-')   
+        plot(B_in(:), A(:), 'b+', B_sub(:), A_sub(:), 'r.', x, p_raw(1)*x+p_raw(2), 'k--', x, p_fit(1)*x+p_fit(2), 'k-', x, p_g(1)*x+p_g(2), 'b-')   
         legend({'Data raw', 'Shifted data', 'Fit to raw data', 'Fit to shifted data'}, 'Location', 'NorthWest')
         ylim = get(gca, 'YLim');
-        xlim = get(gca, 'XLim');
+        xlim = get(gca, 'XLim')
         set(gca, 'XLim', xlim, 'Ylim', ylim) 
 
         xlabel('Channel B'), ylabel('Channel A')
@@ -71,16 +72,16 @@ function [ p_fit, A_sub, B_sub] = calculate_ration_of_areas( A, B_in, varargin )
         y_hist = ylim(1):(ylim(2)-ylim(1))/100:ylim(2);
         n_y = hist(A_sub(:), y_hist);
         plot( n_y, y_hist, 'r'), hold on
-        hline(mean(A_sub(:)), {'b'});
-        hline(median(A_sub(:)), {'k'});
+        hline(mean(A_sub(:)), {'b'})
+        hline(median(A_sub(:)), {'k'})
         set(gca, 'YLim', ylim)      
         
         subplot(4,4, [13:15])
         x_hist = xlim(1):(xlim(2)-xlim(1))/100:xlim(2);
         n_x = hist(B_sub(:), x_hist);
         plot( x_hist, n_x, 'r'), hold on
-        vline(mean(B_sub(:)), {'b'});
-        vline(median(B_sub(:)), {'k'});
+        vline(mean(B_sub(:)), {'b'})
+        vline(median(B_sub(:)), {'k'})
         set(gca, 'XLim', xlim, 'Ydir', 'reverse') 
         
     end
