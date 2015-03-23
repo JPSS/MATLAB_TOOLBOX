@@ -8,15 +8,35 @@ function gelData = get_gel_lanes(imageData,varargin)
 %   .lanePositions is array nr_lanes * [left edge, right edge, top edge, bottom edge]
 %   .imageNames is cell array of image name strings
 %   .fullProfiles is cell array {nr_image,nr_lane} of lane profiles (horizontal integrals) over entire gel image vertical length
+% Example: profileData = get_gel_lanes(gelData, 'display', 'off', 'cutoff', 0.01);
 
+%% parse input variables
+    p = inputParser;
+    % required parameter
+    addRequired(p,'imageData');
+    
+    % optional parameter: weight_factors 
+    default_weight_factors = num2cell(ones(1,imageData.nrImages));
+    addParameter(p,'weight_factors', default_weight_factors,  @iscell); % check 
+
+    % optional parameter: cutoff for fit
+    default_cutoffFit = -1;
+    addParameter(p,'cutoff', default_cutoffFit,  @isnumeric); % check 
+
+    % optional parameter: display (if off does not plot results)
+    default_display = 'on';
+    expected_display = {'on', 'off'};
+    addParameter(p,'display', default_display,  @(x) any(validatestring(x,expected_display))); % check display is 'on' or 'off'
+
+    %
+    parse(p, imageData, varargin{:});
+    display_bool = strcmp(p.Results.display, 'on');
+    weight_factors = p.Results.weight_factors;
+    cutoffFit = p.Results.cutoff;
 %% load image weight factors
 
-if isempty(varargin)                                                            %check weights for different channels
-    weight_factors=num2cell(ones(1,imageData.nrImages));
-elseif length(varargin)~=imageData.nrImages
+if length(weight_factors)~=imageData.nrImages
     error('wrong number of weights for images')
-else
-    weight_factors=varargin;
 end
 
 %% find estimated lanes using find_lanes_roots.m
@@ -79,10 +99,12 @@ close all
 %   laneFits{Nlanes} is cell of lanes of [fitobject, gof, output] from fit()
 %   lanesCorrected is array of lanes of [ leftBorder, rightBorder ]
 
-prompt={'set cutoff parameter for fit improvement'};
-def={'0.01'};
-temp = inputdlg(prompt, 'set cutoff parameter for fit improvement', 1, def);
-cutoffFit=str2double(temp);
+if cutoffFit < 0
+    prompt={'set cutoff parameter for fit improvement'};
+    def={'0.01'};
+    temp = inputdlg(prompt, 'set cutoff parameter for fit improvement', 1, def);
+    cutoffFit=str2double(temp);
+end
 
 laneFits = cell(size(lanePositions,1),3);
 lanesFitted=zeros(size(lanePositions,1),2);
@@ -129,22 +151,23 @@ for i=1:nr_lanes                                                                
 end
 
 %% plot all corrected lane fits
-
-plot(verticalSum(1:selectedArea(3)))
-hold on
-for i=1:size(lanePositions,1)
-    fitParameters=coeffvalues(laneFits{i,1});
-    plot(laneFits{i,1})
-    x=[lanesFitted(i,1),lanesFitted(i,1)];
-    y=[0,fitParameters(3)];
-    plot(x,y,'LineWidth',0.5,'color','black')
-    x=[lanesFitted(i,2),lanesFitted(i,2)];
-    y=[0,fitParameters(3)];
-    plot(x,y,'LineWidth',0.5,'color','black')
-    title('fitted lanes - press any key');
+if display_bool
+    plot(verticalSum(1:selectedArea(3)))
+    hold on
+    for i=1:size(lanePositions,1)
+        fitParameters=coeffvalues(laneFits{i,1});
+        plot(laneFits{i,1})
+        x=[lanesFitted(i,1),lanesFitted(i,1)];
+        y=[0,fitParameters(3)];
+        plot(x,y,'LineWidth',0.5,'color','black')
+        x=[lanesFitted(i,2),lanesFitted(i,2)];
+        y=[0,fitParameters(3)];
+        plot(x,y,'LineWidth',0.5,'color','black')
+        title('fitted lanes - press any key');
+    end
+    pause
+    close all
 end
-pause
-close all
 
 %% calculate lane profiles (horizontal integrals) for each lane
 %   laneProfiles is array of lanes integrated horizontally over fitted lane size
@@ -154,20 +177,26 @@ laneProfiles=cell(imageData.nrImages,nr_lanes);
 fullLaneProfiles=cell(imageData.nrImages,nr_lanes);
 
 for curr_image=1:imageData.nrImages
-    hold all
     
     tempImage=imageData.images{curr_image};
     tempArea=tempImage( selectedArea(2):selectedArea(2)+selectedArea(4), selectedArea(1):selectedArea(1)+selectedArea(3));
 
     for curr_lane=1:size(lanePositions,1)
         laneProfiles{curr_image,curr_lane}=sum(tempArea(1:selectedArea(4),lanesFitted(curr_lane,1):lanesFitted(curr_lane,2)),2);
-        fullLaneProfiles{curr_image,curr_lane}=sum(tempImage(:,selectedArea(1)-1+lanesFitted(curr_lane,1):selectedArea(1)-1+lanesFitted(curr_lane,2)),2);
-        
-        plot(laneProfiles{curr_image,curr_lane})
-        title('fitted profiles - press any key');
+        fullLaneProfiles{curr_image,curr_lane}=sum(tempImage(:,selectedArea(1)-1+lanesFitted(curr_lane,1):selectedArea(1)-1+lanesFitted(curr_lane,2)),2);      
     end
-    pause
-    close all
+    
+    % plot
+    if display_bool
+        hold all
+        for curr_lane=1:size(lanePositions,1)
+            plot(laneProfiles{curr_image,curr_lane})
+            title('fitted profiles - press any key');
+        end
+        pause
+        close all
+    end
+
 end
 
 %% return lane data
