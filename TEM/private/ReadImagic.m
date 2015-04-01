@@ -39,7 +39,7 @@ if nargin<3 numimages=inf; end;
 if nargin<4 debug=0; end;
 
 % Strip the extension if present in basename.
-[path basename ext v]=fileparts(basename);
+[path basename ext ]=fileparts(basename);
 basename=fullfile(path,basename);
 
 % [n1 slen]=size(basename);
