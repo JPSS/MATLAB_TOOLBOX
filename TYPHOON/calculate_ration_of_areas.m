@@ -1,4 +1,4 @@
-function [ p_fit, A_sub, B_sub] = calculate_ration_of_areas( A, B_in, varargin )
+function [ p_fit,  A_sub, B_sub] = calculate_ration_of_areas( A, B_in, varargin )
 % Calculates the ration of subimage A to subimage B based on a scattered
 % plot and a linear fit. 
 %  - This method should be more robust to errors in bakcground corretion.
@@ -41,7 +41,17 @@ function [ p_fit, A_sub, B_sub] = calculate_ration_of_areas( A, B_in, varargin )
     % Fit a line to the scattered points ot obtain slope and offset
     p_fit = polyfit(B_sub(:), A_sub(:), 1);
         % scatter plot of data (if desired
-   
+   %%
+           a_tmp = A_sub(:);
+        b_tmp = B_sub(:);
+
+        t_a = mean(a_tmp);
+        t_b = mean(b_tmp);
+        ab = [a_tmp, b_tmp];
+        ab_sort = ab(ab(:,1)>t_a & ab(:,2)>t_b, :);
+        
+        p_g = polyfit(ab_sort(:,2), ab_sort(:,1), 1);
+        %%
    %%
     if display_bool
        figure();
