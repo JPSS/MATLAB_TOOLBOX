@@ -206,7 +206,7 @@ for i=1:nr_lanes
     lanePositions(i,1)=selectedArea(1)+lanesFitted(i,1)-1;
     lanePositions(i,2)=selectedArea(1)+lanesFitted(i,2)-1;
     lanePositions(i,3)=selectedArea(2);
-    lanePositions(i,4)=selectedArea(2)+selectedArea(4);
+    lanePositions(i,4)=selectedArea(2)+selectedArea(4)-1;
 end
 
 gelData=struct('profiles',{laneProfiles},'lanePositions',lanePositions,'imageNames',{imageData.filenames},'fullProfiles',{fullLaneProfiles});
