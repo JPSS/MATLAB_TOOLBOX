@@ -60,37 +60,36 @@ while strcmp(button,'No')                                       %find lane fit s
     lanePositions=find_lanes_intersect(image_sum, selectedArea);
     close all
 
-    plot_image_ui(image_sum);
+    fig=plot_image_ui(image_sum);
     title('preselected lanes');
     hold on
     for i=1:size(lanePositions,1)
         rectangle('Position', lanePositions(i,:), 'EdgeColor', 'r'), hold on
     end
-
     button = questdlg('are the selected starting lanes ok?','are the selected starting lanes ok?' ,'No','Yes', 'Yes');
 end
 nr_lanes=size(lanePositions,1);
 
-close all
-
+close(fig);
 %% if there are negative vertical sums (due to bg correction), raise vertical sums to 0
 
 area = image_sum( selectedArea(2):selectedArea(2)+selectedArea(4), selectedArea(1):selectedArea(1)+selectedArea(3));
 verticalSum = sum(area);
 minValue=min(verticalSum);
-close all
+fig=figure;
 plot(verticalSum,'red')
 hold on
 plot(verticalSum-min(verticalSum))
-plot(1:selectedArea(3),0)
+plot([1 selectedArea(3)],[0 0])
 legend('original','move to 0')
 
 button = questdlg('move min value to 0?','move min value to 0?' ,'No','Yes', 'Yes');
+
 if strcmp(button,'Yes')
     verticalSum=verticalSum-minValue;
     area=area-minValue/double(selectedArea(4));
 end
-close all
+close(fig)
 
 %% improve estimated lane by fitting 1 gaussian convolved with step function
 %   fit gauss step convolution to estimated lane areas
@@ -152,7 +151,8 @@ end
 
 %% plot all corrected lane fits
 if display_bool
-    plot(verticalSum(1:selectedArea(3)))
+    fig=figure;
+    plot(verticalSum(1:selectedArea(3)));
     hold on
     for i=1:size(lanePositions,1)
         fitParameters=coeffvalues(laneFits{i,1});
@@ -166,7 +166,7 @@ if display_bool
         title('fitted lanes - press any key');
     end
     pause
-    close all
+    close(fig)
 end
 
 %% calculate lane profiles (horizontal integrals) for each lane
