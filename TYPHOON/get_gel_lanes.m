@@ -27,12 +27,19 @@ function gelData = get_gel_lanes(imageData,varargin)
     default_display = 'on';
     expected_display = {'on', 'off'};
     addParameter(p,'display', default_display,  @(x) any(validatestring(x,expected_display))); % check display is 'on' or 'off'
+    
+    % optional parameter: selection_type, for initial lane selection
+    default_selection_type = 'automatic';
+    expected_selection_type = {'automatic', 'manual'};
+    addParameter(p,'selection_type', default_selection_type,  @(x) any(validatestring(x,expected_selection_type))); % check display is 'on' or 'off'
 
     %
     parse(p, imageData, varargin{:});
     display_bool = strcmp(p.Results.display, 'on');
     weight_factors = p.Results.weight_factors;
     cutoffFit = p.Results.cutoff;
+    selection_type = p.Results.selection_type;
+
 %% load image weight factors
 
 if length(weight_factors)~=imageData.nrImages
@@ -54,23 +61,31 @@ title('Select area of lanes')
 h = imrect;
 wait(h);
 selectedArea = int32(getPosition(h));
-
-button='No';
-while strcmp(button,'No')                                       %find lane fit start values using find_lanes_roots()
-    lanePositions=find_lanes_intersect(image_sum, selectedArea);
+if strcmp(selection_type, 'manual')
+    % manual detection of lanes
+    lanePositions=manual_lane_selection(image_sum, selectedArea);
     close all
 
-    fig=plot_image_ui(image_sum);
-    title('preselected lanes');
-    hold on
-    for i=1:size(lanePositions,1)
-        rectangle('Position', lanePositions(i,:), 'EdgeColor', 'r'), hold on
+else 
+    % automatic detecion of lanes
+    button='No';
+    while strcmp(button,'No')                                       %find lane fit start values using find_lanes_roots()
+        lanePositions=find_lanes_intersect(image_sum, selectedArea);
+        close all
+
+        fig=plot_image_ui(image_sum);
+        title('preselected lanes');
+        hold on
+        for i=1:size(lanePositions,1)
+            rectangle('Position', lanePositions(i,:), 'EdgeColor', 'r'), hold on
+        end
+        button = questdlg('are the selected starting lanes ok?','are the selected starting lanes ok?' ,'No','Yes', 'Yes');
+        close(fig);
+
     end
-    button = questdlg('are the selected starting lanes ok?','are the selected starting lanes ok?' ,'No','Yes', 'Yes');
 end
 nr_lanes=size(lanePositions,1);
 
-close(fig);
 %% if there are negative vertical sums (due to bg correction), raise vertical sums to 0
 
 area = image_sum( selectedArea(2):selectedArea(2)+selectedArea(4), selectedArea(1):selectedArea(1)+selectedArea(3));
