@@ -63,8 +63,9 @@ wait(h);
 selectedArea = int32(getPosition(h));
 if strcmp(selection_type, 'manual')
     % manual detection of lanes
-    lanePositions=manual_lane_selection(image_sum, selectedArea);
     close all
+
+    lanePositions=manual_lane_selection(image_sum, selectedArea);
 
 else 
     % automatic detecion of lanes
