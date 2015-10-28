@@ -1,5 +1,5 @@
 function imageData = load_gel_image(varargin)
-%% Loads image, fits lanes according to step function convolved with gaussian
+%% Loads gel image data
 %   INPUTS: 
 %   'data_dir' (optional parameter) = initial directory, where data is
 %   stored
