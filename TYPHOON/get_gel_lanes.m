@@ -8,6 +8,8 @@ function gelData = get_gel_lanes(imageData,varargin)
 %   .lanePositions is array nr_lanes * [left edge, right edge, top edge, bottom edge]
 %   .imageNames is cell array of image name strings
 %   .fullProfiles is cell array {nr_image,nr_lane} of lane profiles (horizontal integrals) over entire gel image vertical length
+%   .pathnames are pathnames of imageData
+%   .filenames are filenames of imageData
 % Example: profileData = get_gel_lanes(gelData, 'display', 'off', 'cutoff', 0.01);
 
 %% parse input variables
@@ -226,4 +228,6 @@ for i=1:nr_lanes
 end
 
 gelData=struct('profiles',{laneProfiles},'lanePositions',lanePositions,'imageNames',{imageData.filenames},'fullProfiles',{fullLaneProfiles});
+gelData.pathnames=imageData.pathnames;
+gelData.filenames=imageData.filenames;
 end
