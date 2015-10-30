@@ -39,6 +39,11 @@ function gelData = get_gel_lanes(imageData,varargin)
     default_background = 'off';
     expected_background = {'on', 'off'};
     addParameter(p,'background', default_background,  @(x) any(validatestring(x,expected_background))); % check background is 'on' or 'off'
+    
+    % optional parameter: preset_laneArea (if on sets lane area selection rectangle to top half of image)
+    default_preset_laneArea = 'off';
+    expected_preset_laneArea = {'on', 'off'};
+    addParameter(p,'preset_laneArea', default_preset_laneArea,  @(x) any(validatestring(x,expected_preset_laneArea))); % check preset_laneArea is 'on' or 'off'
 
     %
     parse(p, imageData, varargin{:});
@@ -47,6 +52,7 @@ function gelData = get_gel_lanes(imageData,varargin)
     cutoffFit = p.Results.cutoff;
     selection_type = p.Results.selection_type;
     background_bool = strcmp(p.Results.background,'on');
+    preset_laneArea_bool = strcmp(p.Results.preset_laneArea,'on');
 
 %% load image weight factors
 
@@ -66,7 +72,11 @@ end
 
 plot_image_ui(image_sum)                                        %select area for lane determination
 title('Select area of lanes')
-h = imrect;
+if preset_laneArea_bool
+    h = imrect(gca,[1 1 size(imageData.images{1},2)-1 0.5*size(imageData.images{1},1)]);
+else
+    h = imrect
+end
 wait(h);
 selectedArea = int32(getPosition(h));
 if strcmp(selection_type, 'manual')
