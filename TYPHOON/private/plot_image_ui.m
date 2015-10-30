@@ -9,7 +9,7 @@ x = reshape(img, size(img,1)*size(img,2), 1);  %make an array out of the img to 
 clim = [min(min(img)) max(max(img))];
 dc  = clim(2)-clim(1);
 clim = [clim(1)-dc*0.01  clim(2)+dc*0.01];
-clim_start = [0 clim(2)];
+clim_start = [clim(1) mean(mean(img))];
 
 % parse input 
 p = inputParser;
