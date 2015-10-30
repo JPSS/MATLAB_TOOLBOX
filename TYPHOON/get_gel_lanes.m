@@ -34,6 +34,11 @@ function gelData = get_gel_lanes(imageData,varargin)
     default_selection_type = 'automatic';
     expected_selection_type = {'automatic', 'manual'};
     addParameter(p,'selection_type', default_selection_type,  @(x) any(validatestring(x,expected_selection_type))); % check display is 'on' or 'off'
+    
+    % optional parameter: background (if on copies .background from imageData.background)
+    default_background = 'off';
+    expected_background = {'on', 'off'};
+    addParameter(p,'background', default_background,  @(x) any(validatestring(x,expected_background))); % check background is 'on' or 'off'
 
     %
     parse(p, imageData, varargin{:});
@@ -41,6 +46,7 @@ function gelData = get_gel_lanes(imageData,varargin)
     weight_factors = p.Results.weight_factors;
     cutoffFit = p.Results.cutoff;
     selection_type = p.Results.selection_type;
+    background_bool = strcmp(p.Results.background,'on');
 
 %% load image weight factors
 
@@ -230,4 +236,9 @@ end
 gelData=struct('profiles',{laneProfiles},'lanePositions',lanePositions,'imageNames',{imageData.filenames},'fullProfiles',{fullLaneProfiles});
 gelData.pathnames=imageData.pathnames;
 gelData.filenames=imageData.filenames;
+
+if background_bool
+    gelData.background=imageData.background;
+end
+
 end
