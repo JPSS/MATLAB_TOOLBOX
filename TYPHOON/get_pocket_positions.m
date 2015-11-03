@@ -12,8 +12,9 @@ function gelData = get_pocket_positions(gelData,channel)
 % Example: gelData = get_gel_lanes(gelData);
 
 button='No';
+figure('units','normalized','outerposition',[0 0 1 1]);
 while strcmp(button,'No')                                       %find pocket locations by finding maximum value in range
-    fig=figure;
+    clf
     fig=plot([gelData.profiles{channel,:}]);
     title('Select pocket peak area')
     rect = imrect;
@@ -26,15 +27,17 @@ while strcmp(button,'No')                                       %find pocket loc
     for i=1:length(gelData.profiles)
         [~, loc]=max(gelData.profiles{channel,i}(selectedArea(1):selectedArea(1)+selectedArea(3)));
         pocketPositions(i)=loc+selectedArea(1)-1;
-        fig=plot([gelData.profiles{channel,i}]);
-        hold on
-
-        x=[pocketPositions(i),pocketPositions(i)];
-        y=[0,max(gelData.profiles{channel,i})];
-        plot(x,y,'LineWidth',0.5,'color','black')
-        pause
-        clf
     end
+    
+    clf
+    for i=1:length(gelData.profiles)
+        plot([gelData.profiles{channel,i}]./max([gelData.profiles{channel,i}])+i-1);
+        hold on
+        x=[pocketPositions(i),pocketPositions(i)];
+        y=[i-1,i];
+        plot(x,y,'LineWidth',1.5,'color','black')
+    end
+    axis([0 length(gelData.profiles{channel,1}) 0 size(gelData.profiles,2)]);
     button = questdlg('are the pocket positions ok?','are the pocket positions ok?' ,'No','Yes', 'Yes');
 end
 
