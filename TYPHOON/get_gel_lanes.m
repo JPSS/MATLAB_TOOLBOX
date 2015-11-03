@@ -44,6 +44,11 @@ function gelData = get_gel_lanes(imageData,varargin)
     default_preset_laneArea = 'off';
     expected_preset_laneArea = {'on', 'off'};
     addParameter(p,'preset_laneArea', default_preset_laneArea,  @(x) any(validatestring(x,expected_preset_laneArea))); % check preset_laneArea is 'on' or 'off'
+    
+    % optional parameter: vertical_correction (if on vertical correction question dialog is shown)
+    default_vertical_correction = 'on';
+    expected_vertical_correction = {'on', 'off'};
+    addParameter(p,'vertical_correction', default_vertical_correction,  @(x) any(validatestring(x,expected_vertical_correction))); % check vertical_correction is 'on' or 'off'
 
     %
     parse(p, imageData, varargin{:});
@@ -53,6 +58,7 @@ function gelData = get_gel_lanes(imageData,varargin)
     selection_type = p.Results.selection_type;
     background_bool = strcmp(p.Results.background,'on');
     preset_laneArea_bool = strcmp(p.Results.preset_laneArea,'on');
+    vertical_correction_bool = strcmp(p.Results.vertical_correction,'on');
 
 %% load image weight factors
 
@@ -109,21 +115,25 @@ nr_lanes=size(lanePositions,1);
 
 area = image_sum( selectedArea(2):selectedArea(2)+selectedArea(4), selectedArea(1):selectedArea(1)+selectedArea(3));
 verticalSum = sum(area);
-minValue=min(verticalSum);
-fig=figure;
-plot(verticalSum,'red')
-hold on
-plot(verticalSum-min(verticalSum))
-plot([1 selectedArea(3)],[0 0])
-legend('original','move to 0')
 
-button = questdlg('move min value to 0?','move min value to 0?' ,'No','Yes', 'Yes');
+if vertical_correction_bool
 
-if strcmp(button,'Yes')
-    verticalSum=verticalSum-minValue;
-    area=area-minValue/double(selectedArea(4));
+    minValue=min(verticalSum);
+    fig=figure;
+    plot(verticalSum,'red')
+    hold on
+    plot(verticalSum-min(verticalSum))
+    plot([1 selectedArea(3)],[0 0])
+    legend('original','move to 0')
+
+    button = questdlg('move min value to 0?','move min value to 0?' ,'No','Yes', 'Yes');
+
+    if strcmp(button,'Yes')
+        verticalSum=verticalSum-minValue;
+        area=area-minValue/double(selectedArea(4));
+    end
+    close(fig)
 end
-close(fig)
 
 %% improve estimated lane by fitting 1 gaussian convolved with step function
 %   fit gauss step convolution to estimated lane areas
