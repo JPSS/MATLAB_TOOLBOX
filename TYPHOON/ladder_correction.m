@@ -1,16 +1,16 @@
 function [ gel_data ] = ladder_correction(gel_data , data_channel, ladder_channel, intensity_multiplicator)
 %% fit 6 gaussians to 6 DNA ladder bands in each lane, correct lane profiles using fits
-%   INPUTS: imageData from load_gel_image.m
+%   INPUTS: gel_data from load_gel_image.m
 %           data_channel is number of channel with sample data
 %           ladder_channel is number of channel that contains DNA ladder information for lane adjustments
 %           intensity_multiplicator scales ladder_channel image before subtracting data_channel from it to remove all non-Ladder data.
 %               should be set <1 usually so that all non-Ladder data is negative and will be set to 0
 %   OUTPUT:
-%   results struct with .weightedMeans .gaussFitcoeffs .normalizedProfiles .normalizedPocketPosition
-%   .weightedMeans is 6 differently corrected weighted means of each lane (type, lane)
+%   results struct with .gaussFitcoeffs .mean_ladder_speeds
 %   .gaussFitcoeffs are coefficients of 6 gauss fit for each lane
-%   .normalizedProfiles are profiles with equated pocket positions and normalized to laneSpeed units (average DNA ladder speed)
-%   .normalizedPocketPosition is position of equated pocket positions in laneSpeed units
+%   .mean_ladder_speeds is list[lane] mean speed of ladder bands
+%  Example = folding_time_determination(gel_data, 1:20, -0.05, 0.8, 851, 0.5)
+
 
 %number of datapoints in profiles
 profile_length = length(gel_data.profiles{1,1})
@@ -18,10 +18,8 @@ num_lanes = size(gel_data.profiles,2)
 
 %data before pocket_offset + pocket_position is ignored for fitting because it usually has large fluctuations in data
 pocket_offset = 20;
-%number of points onto which profiles will be rescaled using ladder positions
-numberNormalizationPoints=1000;
 
-%subtract data channel from intensity_multiplicator * ladder channel to create ladder only profile
+%% subtract data channel from intensity_multiplicator * ladder channel, set negative values to 0 to create ladder only profile
 ladder_minus_data = zeros(profile_length, num_lanes);            
 for i = 1:num_lanes
     %last values of data and ladder channel
@@ -34,9 +32,9 @@ end
 %set all negative values of ladder only profile to zero to make flat background
 ladder_minus_data(ladder_minus_data < 0) = 0;                                                 
 
+%% fit dna ladder bands using 6 gaussians
 fig = figure('units','normalized','outerposition',[0 0 1 1]);
 
-%fit dna ladder bands using 6 gaussians
 button = 'No';
 while strcmp(button,'No')  
     fit_function = fittype('gauss6');
