@@ -25,7 +25,7 @@ function [ lanes ] = find_lanes_intersect( image, pos )
     hold on
     hline(min(horizontalProfile), 'k--');
     hline(max(horizontalProfile), 'g--');
-    threshold_init = (max(horizontalProfile)-min(horizontalProfile))/2; % initialize threshold
+    threshold_init = (max(horizontalProfile)-min(horizontalProfile))/4; % initialize threshold
     hline(threshold_init, 'r--');
     set(gca, 'XLim', [pos(2) pos(2)+pos(4)])
     plot(x, horizontalProfile, 'b')
