@@ -11,54 +11,64 @@ function imageDataBgCorrected = background_correct_gel_image(imageData, varargin
 
 %% parse input
 p = inputParser;
-default_n_ref_bg = 1; % default for number of references for background correction
+% default for number of references for background correction
+default_n_ref_bg = 1;
 
-addRequired(p,'imageData');
-addParameter(p,'numberOfAreas',default_n_ref_bg, @isnumeric); 
+addRequired(p, 'imageData');
+addParameter(p, 'numberOfAreas', default_n_ref_bg, @isnumeric); 
 
-    % optional parameter: histogram_background (if on, selects background from maximum of smoothed image histogram
-    default_histogram_background = 'off';
-    expected_histogram_background = {'on', 'off'};
-        % check histogram_background is 'on' or 'off'
-    addParameter(p,'histogram_background', default_histogram_background,  @(x) any(validatestring(x,expected_histogram_background)));
+% optional parameter: histogram_background (if on, selects background from maximum of smoothed image histogram
+default_histogram_background = 'off';
+expected_histogram_background = {'on', 'off'};
+% check histogram_background is 'on' or 'off'
+addParameter(p, 'histogram_background', default_histogram_background, @(x) any(validatestring(x,expected_histogram_background)));
 
-    % optional parameter: histogram_smooth_span for image histogram smoothing for background determination
-    default_histogram_smooth_span = 10;
-    addParameter(p,'histogram_smooth_span', default_histogram_smooth_span,  @isnumeric); % check 
+% optional parameter: histogram_smooth_span for image histogram smoothing for background determination
+default_histogram_smooth_span = 10;
+addParameter(p, 'histogram_smooth_span', default_histogram_smooth_span, @isnumeric); 
     
 parse(p, imageData, varargin{:});
-n_ref_bg = p.Results.numberOfAreas;  % number of references for background correction
+% number of references for background correction
+n_ref_bg = p.Results.numberOfAreas;
 
-    histogram_background_bool=strcmp(p.Results.histogram_background,'on');
+    histogram_background_bool = strcmp(p.Results.histogram_background, 'on');
     histogram_smooth_span = p.Results.histogram_smooth_span;
 
 %% apply background correction to images
 
 images_bg = cell(imageData.nrImages, 1);
 background = cell(imageData.nrImages, 1); % stores bckground values
-for i=1:imageData.nrImages
+for i = 1:imageData.nrImages
     
-    if histogram_background_bool    %subtract maximum location value of smoothed image histogram from image
-        histogram=histcounts(imageData.images{i},max(max(imageData.images{i}))-min(min(imageData.images{i})));  %calculate histogram of image
-        histogram_smooth=smooth(histogram,histogram_smooth_span);                                               %smooth histogram of image
-        [~, loc]=max(histogram_smooth);
-        loc=loc+min(min(imageData.images{i}))-1+0.5;                                                            %determine peak location+half bin size
+    %subtract maximum location value of smoothed image histogram from image
+    if histogram_background_bool
+        %calculate histogram of image
+        [histogram, edges] = histcounts(imageData.images{i});
+        %smooth histogram of image
+        histogram_smooth = smooth(histogram, histogram_smooth_span);
+        [~, loc] = max(histogram_smooth);
+        %determine peak location+half bin size
+        loc = 0.5 * (edges(loc) + edges(loc + 1));
         
+        %display smooth histogram and location
         clf
-        plot([min(min(imageData.images{i})):max(max(imageData.images{i}))-1],histogram_smooth)                  %display smooth histogram and location
+        plot( edges(1:end - 1) + 0.5*(edges(2) - edges(1)), histogram_smooth)
         hold on
         plot([loc loc],[0 max(histogram_smooth)]);
-        axis([0 sum(histogram.*[min(min(imageData.images{i})):max(max(imageData.images{i}))-1])/sum(histogram) 0 max(histogram_smooth)])
+        axis([0 min(10*loc, max(max(imageData.images{i}))) 0 max(histogram_smooth)])
         pause
         
-        background{i}=loc;                                      %save background correction value
-        images_bg{i}=imageData.images{i}-loc;                   %subtract background correction value
+        %save background correction value
+        background{i} = loc;
+        %subtract background correction value
+        images_bg{i} = imageData.images{i} - loc;
     else
-        [images_bg{i}, background{i}] = correct_background(imageData.images{i}, 'areas', n_ref_bg); % subtract a constant from each image  
+        % subtract a constant from each image  
+        [images_bg{i}, background{i}] = correct_background(imageData.images{i}, 'areas', n_ref_bg);
     end
 end
 %% create imageDataBgCorrected structure, return imageDataBgCorrected structure
 
-imageData.images=images_bg;
+imageData.images = images_bg;
 imageData.background = background;
-imageDataBgCorrected=imageData;
+imageDataBgCorrected = imageData;
