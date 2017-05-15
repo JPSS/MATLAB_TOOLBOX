@@ -80,13 +80,21 @@ end
 %% calculate tiff format values from .gel format
 images_tiff = cell(nrImages, 1);
 
-LAU_max = max(max(images_LAU{i}));
-
 for i = 1:nrImages
-    if LAU_max < LAU_65535
-        images_tiff{i} = 62258/(LAU_max - LAU_0) .* (images_LAU{i} - LAU_0);
+    LAU_max = max(max(images_LAU{i}));
+    
+    %sorted array of unique values in LAU data
+    values_in_LAU_data = sort(unique(images_LAU{i}(:)));
+    
+    if max(max(images_gel{i})) == 65535
+        'tiff scaled to 65535'
+        images_tiff{i} = 62258/(values_in_LAU_data(end-1) - LAU_0) .* (images_LAU{i} - LAU_0);
+        %values above max_non_saturated_value are set to 65535
+        max_non_saturated_value = 62258/(values_in_LAU_data(end-1) - LAU_0) .* (values_in_LAU_data(end-1) - LAU_0);
+        images_tiff{i}(images_tiff{i} > max_non_saturated_value) = 65535;
     else
-        images_tiff{i} = 65535/(LAU_65535 - LAU_0) .* (images_LAU{i} - LAU_0);
+        'tiff scaled to 62258'
+        images_tiff{i} = 62258/(LAU_max - LAU_0) .* (images_LAU{i} - LAU_0);
     end
 end
 
