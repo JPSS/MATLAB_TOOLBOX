@@ -7,17 +7,15 @@ function imageData = typhoon_gel_to_tiff(imageData, varargin)
 %   imageData struct with .images .images_gel .images_tiff .pathnames .filenames .nrImages
 %   .nrImages is number of images
 %   .images is cell array {nr_image} of image data in linear LAU format
-%   .images_gel is cell array {nr_image} of image data in square-root .gel format
-%   .images_tiff is cell array {nr_image} of image data in linear-with-constant-offset .tiff format
+%   .images_gel_format is cell array {nr_image} of image data in square-root .gel format
+%   .images_tiff_format is cell array {nr_image} of image data in linear-with-constant-offset .tiff format
 %   .pathnames is cell array {nr_image} of pathnames to each image
 %   .filenames is cell array {nr_image} of filenames of each image
-%
-% Example: myImageData = load_gel_image('data_dir', '~/Documents/Images');
 
 %% calculate LAU format values from .gel format
-images_LAU = cell(nrImages, 1);
+images_LAU = cell(imageData.nrImages, 1);
 
-%standard values for the ZNN typhoon scanner:
+%standard values for the ZNN typhoon laserscanner:
 %LAU value for QL=0
 pix = 25;
 L = 5;
@@ -25,21 +23,21 @@ G = 65536;
 LAU_0 = (pix / 100)^2 * 100 * 10^(L * (0/G - 0.5));
 LAU_65535 = (pix / 100)^2 * 100 * 10^(L * (65535/G - 0.5));
 
-for i = 1:nrImages
-    images_LAU{i} = (images_gel{i} .* ((sqrt(LAU_65535) - sqrt(LAU_0)) / 65535) + sqrt(LAU_0)) .^ 2;
+for i = 1 : imageData.nrImages
+    images_LAU{i} = (imageData.images{i} .* ((sqrt(LAU_65535) - sqrt(LAU_0)) / 65535) + sqrt(LAU_0)) .^ 2;
 end
 
 
 %% calculate tiff format values from .gel format
-images_tiff = cell(nrImages, 1);
+images_tiff = cell(imageData.nrImages, 1);
 
-for i = 1:nrImages
+for i = 1 : imageData.nrImages
     LAU_max = max(max(images_LAU{i}));
     
     %sorted array of unique values in LAU data
     values_in_LAU_data = sort(unique(images_LAU{i}(:)));
     
-    if max(max(images_gel{i})) == 65535
+    if max(max(imageData.images{i})) == 65535
         'tiff scaled to 65535'
         images_tiff{i} = 62258/(values_in_LAU_data(end-1) - LAU_0) .* (images_LAU{i} - LAU_0);
         %values above max_non_saturated_value are set to 65535
@@ -51,7 +49,9 @@ for i = 1:nrImages
     end
 end
 
-%% create imageData structure, return imageData structure
+%% add different image formats to imageData structure, return imageData structure
+imageData.images_gel_format = imageData.images;
+imageData.images_tiff_format = images_tiff;
+imageData.images = images_LAU;
 
-imageData = struct('images_gel',{images_gel}, 'images', {images_LAU}, 'images_tiff', {images_tiff}, 'pathnames', {pathnames}, 'filenames', {filenames}, 'nrImages', nrImages);
 end
