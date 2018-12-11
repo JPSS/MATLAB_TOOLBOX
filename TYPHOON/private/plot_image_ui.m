@@ -9,38 +9,41 @@ x = reshape(img, size(img,1)*size(img,2), 1);  %make an array out of the img to 
 clim = [min(min(img)) max(max(img))];
 dc  = clim(2)-clim(1);
 clim = [clim(1)-dc*0.01  clim(2)+dc*0.01];
-clim_start = [mean(x)-3*std(x) mean(x)+3*std(x)];
-clim_start(2) = min(clim_start(2), clim(2));
-clim_start(1) = max(clim_start(1), clim(1)+1);
+clim_start = [clim(1) mean(mean(img))];
 
 % parse input 
 p = inputParser;
 
 addRequired(p,'img');
-addParameter(p,'colormap',colormap('Gray'), @(map)iptcheckmap(map, 'plot_image_ui', 'colormap', 'doesnt matter') ); 
+%addParameter(p,'colormap',colormap('Gray'), @(map)iptcheckmap(map, 'plot_image_ui', 'colormap', 'doesnt matter') ); 
+addParameter(p,'colormap','Gray'); 
 addParameter(p,'type','figure', @ischar ); 
 
 parse(p, img, varargin{:});
 
 %check type request, create appropriate class object
 if strcmp(p.Results.type,'image')
-    cur_fig = imagesc(img, clim_start); colorbar, axis image 
 else
     cur_fig = figure('units','normalized','outerposition',[0 0 1 1]);
     set(cur_fig,'toolbar','figure');
-    imagesc(img, clim_start); colorbar, axis image
 end
 
 %apply colormap
 colormap(p.Results.colormap);
-
+ 
 axisHandle = gca;
-
+ 
 stepSize=[0.001 0.01];          %slider minor and major stepsizes
 %create slider objects
 slider_upperLimit=uicontrol('Style', 'slider', 'Min', clim(1),'Max', clim(2),'Value', clim_start(2), 'SliderStep', stepSize,'Position', [1 50 500 20],'Callback', {@lim_high,axisHandle});  %slider upper limit 
 slider_lowerLimit=uicontrol('Style', 'slider', 'Min', clim(1),'Max', clim(2),'Value', clim_start(1), 'SliderStep', stepSize,'Position', [1 30 500 20],'Callback', {@lim_low,axisHandle});   %slider lower limit
 uicontrol('Style', 'slider', 'Min', stepSize(1),'Max', 1,'Value', 1, 'SliderStep', stepSize,'Position', [1 0 500 20],'Callback', {@lim_range,axisHandle,slider_upperLimit,slider_lowerLimit});   %slider multplier
+ 
+if strcmp(p.Results.type,'image')
+    cur_fig = imagesc(img, clim_start); %colorbar, axis image 
+else
+    imagesc(img, clim_start); %colorbar, axis image
+end
 
 function lim_high(hObj,event,ax) %#ok<INUSL>
     % Called to set upper zlim of surface in figure axes
