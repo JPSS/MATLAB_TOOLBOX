@@ -31,8 +31,8 @@ parse(p, imageData, varargin{:});
 % number of references for background correction
 n_ref_bg = p.Results.numberOfAreas;
 
-    histogram_background_bool = strcmp(p.Results.histogram_background, 'on');
-    histogram_smooth_span = p.Results.histogram_smooth_span;
+histogram_background_bool = strcmp(p.Results.histogram_background, 'on');
+histogram_smooth_span = p.Results.histogram_smooth_span;
 
 %% apply background correction to images
 
@@ -42,20 +42,26 @@ for i = 1:imageData.nrImages
     
     %subtract maximum location value of smoothed image histogram from image
     if histogram_background_bool
+        
+        %highest pixel value in current image
+        max_pixel_value = max(max(imageData.images{i}));
+        
         %calculate histogram of image
-        [histogram, edges] = histcounts(imageData.images{i});
+        [histogram, edges] = histcounts(imageData.images{i}, 2^16);
         %smooth histogram of image
         histogram_smooth = smooth(histogram, histogram_smooth_span);
         [~, loc] = max(histogram_smooth);
         %determine peak location+half bin size
         loc = 0.5 * (edges(loc) + edges(loc + 1));
         
-        %display smooth histogram and location
+        %display smooth histogram and unsmoothed histogram and peak location
+        figure
         clf
         plot( edges(1:end - 1) + 0.5*(edges(2) - edges(1)), histogram_smooth)
         hold on
+        plot( edges(1:end - 1) + 0.5*(edges(2) - edges(1)), histogram)
         plot([loc loc],[0 max(histogram_smooth)]);
-        axis([0 min(10*loc, max(max(imageData.images{i}))) 0 max(histogram_smooth)])
+        axis([min(min(imageData.images{i})) min(4*loc, max(max(imageData.images{i}))) 0 max(histogram)])
         pause
         
         %save background correction value
