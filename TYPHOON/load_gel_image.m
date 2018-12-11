@@ -1,9 +1,9 @@
 function imageData = load_gel_image(varargin)
 %% Loads gel image data
 %   INPUTS: 
-%   'data_dir' (optional parameter) = initial directory, where data is
-%   stored
+%   'data_dir' (optional parameter) = initial directory, where data is stored
 %   'n_images' (optional parameter) = number of images to load
+%   'gel_format' (optional parameter) = pass 'on' to load .gel files
 %   OUTPUT:
 %   imageData struct with .images .pathnames .filenames .nrImages
 %   .nrImages is number of images
@@ -18,12 +18,22 @@ p = inputParser;
 default_data_dir = userpath; % default data directory is userpath
 default_data_dir=default_data_dir(1:end-1);
 
-addParameter(p,'data_dir',default_data_dir, @isstr); 
-addParameter(p,'n_images', -1 ,@isnumeric) % n_images, default is -1
+% optional paramters
 
-parse(p,  varargin{:});    
-data_dir = p.Results.data_dir;  % default data location
-nrImages = p.Results.n_images; % set number of images
+addParameter(p,'data_dir',default_data_dir, @isstr);
+% n_images, default is -1
+addParameter(p,'n_images', -1 ,@isnumeric);
+% load files with .gel ending
+addParameter(p,'gel_format', 'off', @(x) strcmp(x, 'on'));
+
+parse(p,  varargin{:});
+% default data location
+data_dir = p.Results.data_dir;
+% set number of images
+nrImages = p.Results.n_images;
+% .gel data format loading on/off
+gel_format_bool = strcmp(p.Results.gel_format, 'on');
+
 
 %% select image data
 init_path = cd; %remember initial/current path
@@ -39,7 +49,11 @@ pathnames = cell(nrImages, 1);
 lastDirectory = data_dir;
 for i=1:nrImages
     cd(lastDirectory)
-    [filenames{i}, pathnames{i}]=uigetfile('*.tif','Select image:');
+    if gel_format_bool
+        [filenames{i}, pathnames{i}]=uigetfile('*.gel','Select image:');
+    else
+        [filenames{i}, pathnames{i}]=uigetfile('*.tif','Select image:');
+    end
     lastDirectory = pathnames{i};
 end
 cd(init_path) % cd to initial directory
