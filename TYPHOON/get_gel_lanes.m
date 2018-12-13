@@ -1,17 +1,19 @@
 function gelData = get_gel_lanes(imageData,varargin)
 %% Loads image, fits lanes according to step function convolved with gaussian
 %   INPUTS:
-%       imageData from load_gel_image.m
-%       optional: {weight_factors}: weights for channels. Lanes are determined from weighted sum of all channels
-%       optional: cutoff: data window for single lane is broadend until less than cutoff fraction of fit function is outside the
-%                   data window shown to fit (exact: the range width from fit center to the closer of the two data window edges,
-%                   applied to both directions)
-%                   lane width is edges of fit beyond which cutoff fraction of fit function (integral) lies
-%       optional: display: switches display of fitting results 
-%       optional: selection_type: select initial lane positions for fitting by hand or using threshold slider
-%       optional: background: switch copying background information from imageData to gelData
-%       optional: preset_laneArea: switch presetting selection of image area to be used for fitting to top half of gel
-%       optional: vertical_correction: switch shifting vertical sum of gel so that no negative values remain
+%   imageData from load_gel_image.m
+%   optional: {weight_factors}: weights for channels. Lanes are determined from weighted sum of all channels
+%   optional: cutoff: data window for single lane is broadend until less than cutoff fraction of fit function is outside the
+%               data window shown to fit (exact: the range width from fit center to the closer of the two data window edges,
+%               applied to both directions)
+%               lane width is edges of fit beyond which cutoff fraction of fit function (integral) lies
+%   optional: display: switches display of fitting results 
+%   optional: selection_type: select initial lane positions for fitting by hand or using threshold slider
+%   optional: background: switch copying background information from imageData to gelData
+%   optional: preset_laneArea: switch presetting selection of image area to be used for fitting to top half of gel
+%   optional: vertical_correction: switch shifting vertical sum of gel so that no negative values remain
+%   optional: preset_threshold = predetermined threshold value for lane detection
+%       threshold is set to maximum value of smoothed horizontal profile multiplied with threshold value
 %   OUTPUT:
 %   gelData struct with .profiles .lanePositions .imageNames
 %   .profiles is cell array {nr_image,nr_lane} of lane profiles (horizontal integrals)
@@ -23,51 +25,55 @@ function gelData = get_gel_lanes(imageData,varargin)
 % Example: profileData = get_gel_lanes(imageData, 'display', 'off', 'cutoff', 0.01);
 
 %% parse input variables
-    p = inputParser;
-    % required parameter
-    addRequired(p,'imageData');
-    
-    % optional parameter: weight_factors 
-    default_weight_factors = num2cell(ones(1,imageData.nrImages));
-    addParameter(p,'weight_factors', default_weight_factors,  @iscell); 
+p = inputParser;
+% required parameter
+addRequired(p,'imageData');
 
-    % optional parameter: cutoff for fit
-    default_cutoffFit = -1;
-    addParameter(p,'cutoff', default_cutoffFit,  @isnumeric); % check 
+% optional parameter: weight_factors 
+default_weight_factors = num2cell(ones(1,imageData.nrImages));
+addParameter(p,'weight_factors', default_weight_factors,  @iscell); 
 
-    % optional parameter: display (if off does not plot results)
-    default_display = 'on';
-    expected_display = {'on', 'off'};
-    addParameter(p,'display', default_display,  @(x) any(validatestring(x,expected_display))); % check display is 'on' or 'off'
-    
-    % optional parameter: selection_type, for initial lane selection
-    default_selection_type = 'automatic';
-    expected_selection_type = {'automatic', 'manual'};
-    addParameter(p,'selection_type', default_selection_type,  @(x) any(validatestring(x,expected_selection_type)));
-    
-    % optional parameter: background (if on copies .background from imageData.background)
-    default_background = 'off';
-    expected_background = {'on', 'off'};
-    addParameter(p,'background', default_background,  @(x) any(validatestring(x,expected_background))); % check background is 'on' or 'off'
-    
-    % optional parameter: preset_laneArea (if on sets lane area selection rectangle to top half of image)
-    default_preset_laneArea = 'off';
-    expected_preset_laneArea = {'on', 'off'};
-    addParameter(p,'preset_laneArea', default_preset_laneArea,  @(x) any(validatestring(x,expected_preset_laneArea))); % check preset_laneArea is 'on' or 'off'
-    
-    % optional parameter: vertical_correction (if on vertical correction question dialog is shown)
-    default_vertical_correction = 'on';
-    expected_vertical_correction = {'on', 'off'};
-    addParameter(p,'vertical_correction', default_vertical_correction,  @(x) any(validatestring(x,expected_vertical_correction))); % check vertical_correction is 'on' or 'off'
+% optional parameter: cutoff for fit
+default_cutoffFit = -1;
+addParameter(p,'cutoff', default_cutoffFit,  @isnumeric); % check 
 
-    parse(p, imageData, varargin{:});
-    display_bool = strcmp(p.Results.display, 'on');
-    weight_factors = p.Results.weight_factors;
-    cutoffFit = p.Results.cutoff;
-    selection_type = p.Results.selection_type;
-    background_bool = strcmp(p.Results.background,'on');
-    preset_laneArea_bool = strcmp(p.Results.preset_laneArea,'on');
-    vertical_correction_bool = strcmp(p.Results.vertical_correction,'on');
+% optional parameter: display (if off does not plot results)
+default_display = 'on';
+expected_display = {'on', 'off'};
+addParameter(p,'display', default_display,  @(x) any(validatestring(x,expected_display))); % check display is 'on' or 'off'
+
+% optional parameter: selection_type, for initial lane selection
+default_selection_type = 'automatic';
+expected_selection_type = {'automatic', 'manual'};
+addParameter(p,'selection_type', default_selection_type,  @(x) any(validatestring(x,expected_selection_type)));
+
+% optional parameter: background (if on copies .background from imageData.background)
+default_background = 'off';
+expected_background = {'on', 'off'};
+addParameter(p,'background', default_background,  @(x) any(validatestring(x,expected_background))); % check background is 'on' or 'off'
+
+% optional parameter: preset_laneArea (if on sets lane area selection rectangle to top half of image)
+default_preset_laneArea = 'off';
+addParameter(p,'preset_laneArea', default_preset_laneArea);
+
+% optional parameter: vertical_correction (if on vertical correction question dialog is shown)
+default_vertical_correction = 'on';
+expected_vertical_correction = {'on', 'off'};
+addParameter(p,'vertical_correction', default_vertical_correction,  @(x) any(validatestring(x,expected_vertical_correction))); % check vertical_correction is 'on' or 'off'
+
+% optional parameter: preset threshold value for lane detection 
+default_preset_threshold  = nan;
+addParameter(p, 'preset_threshold', default_preset_threshold,  @isnumeric);
+
+parse(p, imageData, varargin{:});
+display_bool = strcmp(p.Results.display, 'on');
+weight_factors = p.Results.weight_factors;
+cutoffFit = p.Results.cutoff;
+selection_type = p.Results.selection_type;
+background_bool = strcmp(p.Results.background,'on');
+preset_laneArea_parameter = p.Results.preset_laneArea;
+vertical_correction_bool = strcmp(p.Results.vertical_correction,'on');
+preset_threshold = p.Results.preset_threshold;
 
 %% load image weight factors
 
@@ -89,13 +95,27 @@ end
 %select area for lane determination
 plot_image_ui(image_sum)                                        
 title('Select area of lanes')
-if preset_laneArea_bool
+% preset lane area is on, draw half size rectangle
+if strcmp(preset_laneArea_parameter, 'on')
     h = imrect(gca,[1 1 size(imageData.images{1},2)-1 0.5*size(imageData.images{1},1)]);
-else
+    wait(h);
+    selectedArea = int32(getPosition(h));
+
+% preset lane area is off, draw full rectangle
+elseif strcmp(preset_laneArea_parameter, 'off')
     h = imrect;
+    wait(h);
+    selectedArea = int32(getPosition(h));
+
+% preset lane area is on with positions delivered, draw and accept rectangle
+else
+    title('Preselected gel area (Press any key to continue)')
+    rectangle('Position', preset_laneArea_parameter)
+    selectedArea = preset_laneArea_parameter;
+    %h = imrect(gca, preset_laneArea_parameter);
+    pause
 end
-wait(h);
-selectedArea = int32(getPosition(h));
+
 if strcmp(selection_type, 'manual')
     % manual detection of lanes
     close all
@@ -106,7 +126,7 @@ else
     button='No';
     %find lane fit start values using find_lanes_roots()
     while strcmp(button,'No')
-        lanePositions = find_lanes_intersect(image_sum, selectedArea);
+        lanePositions = find_lanes_intersect(image_sum, selectedArea, 30, 'preset_threshold', preset_threshold);
         close all
 
         fig = plot_image_ui(image_sum);
@@ -115,7 +135,14 @@ else
         for i = 1:size(lanePositions,1)
             rectangle('Position', lanePositions(i,:), 'EdgeColor', 'r'), hold on
         end
-        button = questdlg('are the selected starting lanes ok?','are the selected starting lanes ok?' ,'No','Yes', 'Yes');
+        
+        % if no preset lane selection threshold, check if lanes are correctly selected
+        if isnan(preset_threshold)
+            button = questdlg('are the selected starting lanes ok?','are the selected starting lanes ok?' ,'No','Yes', 'Yes');
+        else
+            pause
+            button = 'Yes';
+        end
         close(fig);
 
     end
