@@ -1,17 +1,43 @@
-function [ lanes ] = find_lanes_intersect( image, pos )
+function [ lanes ] = find_lanes_intersect( image, pos, smoothing_span, varargin)
 %% find lanes edges at intersection with user-supplied threshold
 %  This function determines the positions of lanes based on a user defined
 %  value.
 %  Input: image = Matrix of gray values, pos = positions of outer rectangle as [x0 y0 width height]
 %  x0, y0 are the top left positions
-%  Output: lanes = positions of lanes
+%   smoothing_span = span of horizontal profile values to be smoothed for lane determination
+%%  optional arguments
+    % preset_threshold = predetermined threshold value for lane detection
+    % threshold is set to maximum value of smoothed horizontal profile multiplied with threshold value
+%%  Output: lanes = positions of lanes
 %  Example: find_lanes_intersect(some_image, [100 150 200 50 ])
+
+%% parse arguments
+p = inputParser;
+% required parameter
+addRequired(p,'image');
+addRequired(p,'pos');
+addRequired(p,'smoothing_span');
+
+% optional parameter: preset threshold value for lane detection 
+default_preset_threshold  = nan;
+addParameter(p, 'preset_threshold', default_preset_threshold,  @isnumeric);
+
+% parse all arguments
+parse(p, image, pos, smoothing_span, varargin{:});
+
+% save optional argument values
+preset_threshold = p.Results.preset_threshold;
+
+%% lane determination
 
     area = image( pos(2):pos(2)+pos(4), pos(1):pos(1)+pos(3)); % get the image inside pos
     x = double(pos(1):pos(1)+pos(3)); % define x-axis (horizontal axis)
 
     horizontalProfile = sum(area); % integrate along vertical (y-axis) 
 
+    % smooth horizontal profile to remove noise
+    horizontalProfile = smooth(horizontalProfile, smoothing_span);
+    
     % plot subimage
     cur_fig = figure;
     subplot(2, 1, 1)
@@ -34,12 +60,20 @@ function [ lanes ] = find_lanes_intersect( image, pos )
     xlabel('Horizontal Position [pixel]')
     ylabel('Intensity [a.u.]')
     
-    % create draggable line and read the choosen value
-    h = imline(gca, xlim, [threshold_init threshold_init]); %plot horzontal line
-    setColor(h,[1 0 0]);
-    setPositionConstraintFcn(h, @(pos)[  xlim' [pos(1,2);pos(1,2)]  ])
-    pos_line = wait(h);
-    threshold = pos_line(1,2);
+    % let user select threshold if preset_threshold is not supplied
+    if isnan(preset_threshold)
+        % create draggable line and read the choosen value
+        h = imline(gca, xlim, [threshold_init threshold_init]); %plot horzontal line
+        setColor(h,[1 0 0]);
+        setPositionConstraintFcn(h, @(pos)[  xlim' [pos(1,2);pos(1,2)]  ])
+        pos_line = wait(h);
+        threshold = pos_line(1,2);
+    else
+        % draw preset threshold
+        threshold = preset_threshold * max(horizontalProfile);
+        line(xlim, [threshold threshold], 'Color', 'red')
+        pause
+    end
 
     close(cur_fig)
 
