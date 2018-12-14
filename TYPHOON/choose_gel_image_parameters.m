@@ -5,6 +5,9 @@ function parameters = choose_gel_image_parameters(imageData, weight_factors)
 %   weight_factors = cell array of weights for summation of different channels
 %   OUTPUT:
 %   parameters = struct with .pockets .dna_ladder_lanes .gel_area
+%   pockets = [x_min y_min width height] of rectangle area containing the gel pockets on full gel image
+%   dna_ladder_lanes = y positions of dna ladder bands in sub-area of gel selected for further analysis
+%   gel_area = [x_min y_min width height] of rectangle area selected for further analysis on full gel image
 
 image_sum = weight_factors{1}.*imageData.images{1};                           
 for i=2:imageData.nrImages
@@ -12,7 +15,7 @@ for i=2:imageData.nrImages
 end
 
 %select area for lane determination
-plot_image_ui(image_sum)                                        
+plot_image_ui(image_sum);                                    
 title('Select pocket area')
 h = imrect;
 wait(h);
@@ -49,16 +52,22 @@ h6 = impoint;
 wait(h6);
 setColor(h6,[102, 0, 0]./256);
 
-dna_ladder_lanes = [int32(getPosition(h1)), int32(getPosition(h2)), int32(getPosition(h3)),...
+dna_ladder_locations = [int32(getPosition(h1)), int32(getPosition(h2)), int32(getPosition(h3)),...
     int32(getPosition(h4)), int32(getPosition(h5)), int32(getPosition(h6))];
 
+% save pocket area location
 parameters.pockets = selectedArea;
-parameters.dna_ladder_lanes = dna_ladder_lanes(2:2:end);
 
-distance_between_two_ladder_bands = parameters.dna_ladder_lanes(end) - parameters.dna_ladder_lanes(end - 1);
-parameters.gel_area = [parameters.pockets(1:3) parameters.dna_ladder_lanes(end) + distance_between_two_ladder_bands];
+% save y positions of dna ladder bands within selected sub-area of gel image
+parameters.dna_ladder_locations = dna_ladder_locations(2:2:end) - parameters.pockets(2);
 
-imrect(gca, parameters.gel_area)
+% calculate distance between last and second to last dna ladder band
+distance_between_two_ladder_bands = parameters.dna_ladder_locations(end) - parameters.dna_ladder_locations(end - 1);
+
+% save gel area to be used for further analysis
+parameters.gel_area = [parameters.pockets(1:3) parameters.dna_ladder_locations(end) + 2 * distance_between_two_ladder_bands];
+
+rectangle('Position', parameters.gel_area, 'EdgeColor', 'red')
 title('Good?')
 pause
 close
