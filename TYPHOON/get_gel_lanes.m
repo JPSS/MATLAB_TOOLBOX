@@ -1,4 +1,4 @@
-function gelData = get_gel_lanes(imageData,varargin)
+function lane_profile_data = get_gel_lanes(imageData,varargin)
 %% Loads image, fits lanes according to step function convolved with gaussian
 %   INPUTS:
 %   imageData from load_gel_image.m
@@ -9,13 +9,12 @@ function gelData = get_gel_lanes(imageData,varargin)
 %               lane width is edges of fit beyond which cutoff fraction of fit function (integral) lies
 %   optional: display: switches display of fitting results 
 %   optional: selection_type: select initial lane positions for fitting by hand or using threshold slider
-%   optional: background: switch copying background information from imageData to gelData
 %   optional: preset_laneArea: switch presetting selection of image area to be used for fitting to top half of gel
 %   optional: vertical_correction: switch shifting vertical sum of gel so that no negative values remain
 %   optional: preset_threshold = predetermined threshold value for lane detection
 %       threshold is set to maximum value of smoothed horizontal profile multiplied with threshold value
 %   OUTPUT:
-%   gelData struct with .profiles .lanePositions .imageNames
+%   lane_profile_data struct with .profiles .lanePositions .imageNames
 %   .profiles is cell array {nr_image,nr_lane} of lane profiles (horizontal integrals)
 %   .lanePositions is array nr_lanes * [left edge, right edge, top edge, bottom edge]
 %   .imageNames is cell array of image name strings
@@ -47,11 +46,6 @@ default_selection_type = 'automatic';
 expected_selection_type = {'automatic', 'manual'};
 addParameter(p,'selection_type', default_selection_type,  @(x) any(validatestring(x,expected_selection_type)));
 
-% optional parameter: background (if on copies .background from imageData.background)
-default_background = 'off';
-expected_background = {'on', 'off'};
-addParameter(p,'background', default_background,  @(x) any(validatestring(x,expected_background))); % check background is 'on' or 'off'
-
 % optional parameter: preset_laneArea (if on sets lane area selection rectangle to top half of image)
 default_preset_laneArea = 'off';
 addParameter(p,'preset_laneArea', default_preset_laneArea);
@@ -70,7 +64,6 @@ display_bool = strcmp(p.Results.display, 'on');
 weight_factors = p.Results.weight_factors;
 cutoffFit = p.Results.cutoff;
 selection_type = p.Results.selection_type;
-background_bool = strcmp(p.Results.background,'on');
 preset_laneArea_parameter = p.Results.preset_laneArea;
 vertical_correction_bool = strcmp(p.Results.vertical_correction,'on');
 preset_threshold = p.Results.preset_threshold;
@@ -298,12 +291,12 @@ for i = 1:nr_lanes
     lanePositions(i,4) = selectedArea(2)+selectedArea(4)-1;
 end
 
-gelData = struct('profiles',{laneProfiles},'lanePositions',lanePositions,'imageNames',{imageData.filenames},'fullProfiles',{fullLaneProfiles});
-gelData.pathnames = imageData.pathnames;
-gelData.filenames = imageData.filenames;
+lane_profile_data = struct('profiles',{laneProfiles},'lanePositions',lanePositions,'imageNames',{imageData.filenames},'fullProfiles',{fullLaneProfiles});
+lane_profile_data.pathnames = imageData.pathnames;
+lane_profile_data.filenames = imageData.filenames;
 
-if background_bool
-    gelData.background = imageData.background;
+if exist('imageData.background')
+    lane_profile_data.background = imageData.background;
 end
 
 end
