@@ -61,6 +61,8 @@ while strcmp(button,'No')
         plot(ladder_minus_data(:,1));
         title('select 6 peak tops for start values x and y');
         [x,y] = ginput(6);
+        % distance between the first two bands
+        inter_band_distance = x(2) - x(1);
     % preset band locations submitted, use them to determine start values for gauss fit
     else
         % distance between the first two bands
@@ -104,15 +106,21 @@ while strcmp(button,'No')
     %plot fit results to check if fits are good
     for i = 1:num_lanes
         %plot data
-        plot((current_pocket_start:profile_length), ladder_minus_data(current_pocket_start:end,i)/max(ladder_minus_data(current_pocket_start:end,i)) + i - 1);
+        max_data_value = max(ladder_minus_data( floor(gauss_fit_coeffs(i,2)):ceil(gauss_fit_coeffs(i,17)) , i)) * 1.05;
+        plot((current_pocket_start:profile_length), ladder_minus_data(current_pocket_start:end,i)/max_data_value + i - 1,...
+            'Color', 'black', 'LineWidth', 2);
         hold on
         %plot fits
         plot((current_pocket_start:profile_length),...
-            feval(fit_result{i}, (current_pocket_start:profile_length).')/max(feval(fit_result{i},(current_pocket_start:profile_length).')) + i - 1);
+            feval(fit_result{i},...
+            (current_pocket_start:profile_length).')/max(feval(fit_result{i},(current_pocket_start:profile_length).'))/1.05 + i - 1,...
+            'Color', 'red', 'LineWidth', 1);
         %plot fit peak positions
         for j = 1:6
-            plot([gauss_fit_coeffs(i,j*3 - 1) gauss_fit_coeffs(i,j*3 - 1)],[i-1, i])
+            plot([gauss_fit_coeffs(i,j*3 - 1) gauss_fit_coeffs(i,j*3 - 1)],[i-1, i], 'Color', 'red')
         end
+        
+        ylim([-0.05 (i + 0.05)])
     end
     
     % if no preset ladder locations, check if fits are good
