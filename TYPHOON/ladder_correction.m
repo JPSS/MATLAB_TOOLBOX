@@ -1,17 +1,33 @@
-function [ gel_data ] = ladder_correction(gel_data , data_channel, ladder_channel, intensity_multiplicator)
+function [ gel_data ] = ladder_correction(gel_data , data_channel, ladder_channel, intensity_multiplicator, varargin)
 %% fit 6 gaussians to 6 DNA ladder bands in each lane, correct lane profiles using fits
 %   INPUTS: gel_data from load_gel_image.m
 %           data_channel is number of channel with sample data
 %           ladder_channel is number of channel that contains DNA ladder information for lane adjustments
 %           intensity_multiplicator scales ladder_channel image before subtracting data_channel from it to remove all non-Ladder data.
 %               should be set <1 usually so that all non-Ladder data is negative and will be set to 0
+%           optional: preset_band_locations = preset locations of dna ladder bands
 %   OUTPUT:
 %   results struct with .gaussFitcoeffs .mean_ladder_speeds
 %   .gaussFitcoeffs are coefficients of 6 gauss fit for each lane
 %   .mean_ladder_speeds is list[lane] mean speed of ladder bands
-%  Example = folding_time_determination(gel_data, 1:20, -0.05, 0.8, 851, 0.5)
 
+%% parse input variables
+p = inputParser;
+% required parameter
+addRequired(p,'gel_data');
+addRequired(p,'data_channel');
+addRequired(p,'ladder_channel');
+addRequired(p,'intensity_multiplicator');
 
+% optional parameter: preset band locations 
+default_preset_locations  = nan;
+addParameter(p, 'preset_locations', default_preset_locations,  @isnumeric);
+
+parse(p, gel_data, data_channel, ladder_channel, intensity_multiplicator, varargin{:});
+
+preset_locations = p.Results.preset_locations;
+
+%% set up variables
 %number of datapoints in profiles
 profile_length = length(gel_data.profiles{1,1})
 num_lanes = size(gel_data.profiles,2)
@@ -38,10 +54,31 @@ fig = figure('units','normalized','outerposition',[0 0 1 1]);
 button = 'No';
 while strcmp(button,'No')  
     fit_function = fittype('gauss6');
+    
     %select start values for gauss fit
-    plot(ladder_minus_data(:,1));
-    title('select 6 peak tops for start values x and y');
-    [x,y] = ginput(6);
+    % no preset band locations submited, select by hand
+    if isnan(preset_locations)
+        plot(ladder_minus_data(:,1));
+        title('select 6 peak tops for start values x and y');
+        [x,y] = ginput(6);
+    % preset band locations submitted, use them to determine start values for gauss fit
+    else
+        % distance between the first two bands
+        inter_band_distance = preset_locations(2) - preset_locations(1);
+        x = preset_locations;
+        % find maximum profile value and location within band window
+        for band_number = 1:6
+            band_window = ladder_minus_data(x(band_number) - inter_band_distance/4 : x(band_number) + inter_band_distance/4);
+            [y_temp, x_temp] = max(band_window);
+            x(band_number) = x_temp + x(band_number) - inter_band_distance/4;
+            y(band_number) = y_temp;
+        end
+        plot(ladder_minus_data(:,1));
+        for band_number = 1:6
+            rectangle('Position', [x(band_number) - 2, y(band_number) - 2, 4, 4] , 'EdgeColor', 'red')
+        end        
+        pause
+    end
 
     %start values for fit. are taken from previous fit result after first fit
     startValues = zeros(1, 6 * 3);
@@ -50,7 +87,7 @@ while strcmp(button,'No')
     %gauss x-locations, from profile start
     startValues(2:3:end) = x;
     %gauss width
-    startValues(3:3:end) = 20;
+    startValues(3:3:end) = inter_band_distance/4;
 
     %coefficients of 6 gauss fit, distance is from start of profile, not pocket positions
     gauss_fit_coeffs = zeros(num_lanes, 6 * 3);
@@ -77,7 +114,15 @@ while strcmp(button,'No')
             plot([gauss_fit_coeffs(i,j*3 - 1) gauss_fit_coeffs(i,j*3 - 1)],[i-1, i])
         end
     end
-    button = questdlg('are the fits ok?','are the fits ok?' ,'No','Yes', 'Yes');
+    
+    % if no preset ladder locations, check if fits are good
+    if isnan(preset_locations)
+        button = questdlg('are the fits ok?','are the fits ok?' ,'No','Yes', 'Yes');
+    else
+        title('DNA ladder fits');
+        button = 'Yes';
+        pause
+    end
     clf
 end
 close(fig);    
