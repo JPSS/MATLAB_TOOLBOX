@@ -4,6 +4,8 @@ function imageData = load_gel_image(varargin)
 %   'data_dir' (optional parameter) = initial directory, where data is stored
 %   'n_images' (optional parameter) = number of images to load
 %   'gel_format' (optional parameter) = pass 'on' to load .gel files
+%   optional: files = cell array of cell arrays containing pathname and
+%   filename to be opened
 %   OUTPUT:
 %   imageData struct with .images .pathnames .filenames .nrImages
 %   .nrImages is number of images
@@ -16,7 +18,7 @@ function imageData = load_gel_image(varargin)
 %% parse input
 p = inputParser;
 default_data_dir = userpath; % default data directory is userpath
-default_data_dir=default_data_dir(1:end-1);
+default_data_dir = default_data_dir(1:end-1);
 
 % optional paramters
 
@@ -25,6 +27,8 @@ addParameter(p,'data_dir',default_data_dir, @isstr);
 addParameter(p,'n_images', -1 ,@isnumeric);
 % load files with .gel ending
 addParameter(p,'gel_format', 'off', @(x) strcmp(x, 'on'));
+% filenames and pathnames of files to be opened
+addParameter(p,'files', {}, @iscell);
 
 parse(p,  varargin{:});
 % default data location
@@ -33,7 +37,8 @@ data_dir = p.Results.data_dir;
 nrImages = p.Results.n_images;
 % .gel data format loading on/off
 gel_format_bool = strcmp(p.Results.gel_format, 'on');
-
+% filenames and pathnames of files to be opened
+files = p.Results.files;
 
 %% select image data
 init_path = cd; %remember initial/current path
@@ -46,15 +51,21 @@ end
 filenames = cell(nrImages, 1);
 pathnames = cell(nrImages, 1);
 
-lastDirectory = data_dir;
-for i=1:nrImages
-    cd(lastDirectory)
-    if gel_format_bool
-        [filenames{i}, pathnames{i}]=uigetfile('*.gel','Select image:');
-    else
-        [filenames{i}, pathnames{i}]=uigetfile('*.tif','Select image:');
+% no files passed as arguments, ask user for files
+if isempty(files)
+    lastDirectory = data_dir;
+    for i=1:nrImages
+        cd(lastDirectory)
+        if gel_format_bool
+            [filenames{i}, pathnames{i}]=uigetfile('*.gel','Select image:');
+        else
+            [filenames{i}, pathnames{i}]=uigetfile('*.tif','Select image:');
+        end
+        lastDirectory = pathnames{i};
     end
-    lastDirectory = pathnames{i};
+else
+    pathnames = cellfun(@(x) x(1), files);
+    filenames = cellfun(@(x) x(2), files);
 end
 cd(init_path) % cd to initial directory
 
