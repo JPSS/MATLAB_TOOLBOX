@@ -49,7 +49,7 @@ for i = 1:imageData.nrImages
         %calculate histogram of image
         [histogram, edges] = histcounts(imageData.images{i}, 2^16);
         %smooth histogram of image
-        histogram_smooth = smooth(histogram, histogram_smooth_span);
+        histogram_smooth = smoothdata(histogram, 'movmean', histogram_smooth_span);
         [~, loc] = max(histogram_smooth);
         %determine peak location+half bin size
         loc = 0.5 * (edges(loc) + edges(loc + 1));
