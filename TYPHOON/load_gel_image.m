@@ -43,7 +43,7 @@ files = p.Results.files;
 %% select image data
 init_path = cd; %remember initial/current path
 
-if nrImages <= 0 % ask how many images user wants to load
+if nrImages <= 0 && isempty(files) % ask how many images user wants to load
     temp = inputdlg({'How many images (channels) do you want to load:'}, 'How many images (channels) do you want to load?', 1, {'1'});
     nrImages = str2double(temp(1));
 end
@@ -64,6 +64,8 @@ if isempty(files)
         lastDirectory = pathnames{i};
     end
 else
+    % if files variable was passed, set nr of images to number of files
+    nrImages = length(files);
     pathnames = cellfun(@(x) x(1), files);
     filenames = cellfun(@(x) x(2), files);
 end
