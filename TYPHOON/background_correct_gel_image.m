@@ -64,6 +64,9 @@ for i = 1:imageData.nrImages
         axis([min(min(imageData.images{i})) min(4*loc, max(max(imageData.images{i}))) 0 max(histogram)])
         pause
         
+        % close figure
+        close
+        
         %save background correction value
         background{i} = loc;
         %subtract background correction value
