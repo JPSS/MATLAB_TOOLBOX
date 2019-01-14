@@ -75,9 +75,12 @@ cd(init_path) % cd to initial directory
 images = cell(nrImages, 1);
 
 for i=1:nrImages
-    images{i} = double(imread([pathnames{i} filesep filenames{i}]));             %load image data  
+	%load image data
+    images{i} = double(imread([pathnames{i} filesep filenames{i}]));
+    % load image metadata
+    metadata{i} = imfinfo([pathnames{i} filesep filenames{i}]);
 end
 
 %% create imageData structure, return imageData structure
 
-imageData=struct('images',{images},'pathnames',{pathnames},'filenames',{filenames},'nrImages',nrImages);
+imageData=struct('images',{images},'pathnames',{pathnames},'filenames',{filenames},'nrImages',nrImages, 'metadata',{metadata});
