@@ -36,7 +36,7 @@ while strcmp(button,'No')
     % no preset range supplied, select range by hand
     if isnan(preset_range)
         clf
-        fig = plot([gelData.profiles{channel,:}]);
+        fig = plot([gelData.fullProfiles{channel,:}]);
         title('Select pocket peak area')
         rect = imrect;
         wait(rect);
@@ -49,20 +49,20 @@ while strcmp(button,'No')
     
     pocketPositions=[];
     title('pocket location correct? - press any key')
-    for i = 1:length(gelData.profiles)
-        [~, loc] = max(gelData.profiles{channel,i}(selectedArea(1):selectedArea(1)+selectedArea(3)));
+    for i = 1:length(gelData.fullProfiles)
+        [~, loc] = max(gelData.fullProfiles{channel,i}(selectedArea(1):selectedArea(1)+selectedArea(3)));
         pocketPositions(i) = loc+selectedArea(1) - 1;
     end
     
     clf
-    for i=1:length(gelData.profiles)
-        plot([gelData.profiles{channel,i}]./max([gelData.profiles{channel,i}])+i-1);
+    for i=1:length(gelData.fullProfiles)
+        plot([gelData.fullProfiles{channel,i}]./max([gelData.fullProfiles{channel,i}])+i-1);
         hold on
         x=[pocketPositions(i),pocketPositions(i)];
         y=[i-1,i];
         plot(x,y,'LineWidth',1.5,'color','black')
     end
-    axis([0 length(gelData.profiles{channel,1}) 0 size(gelData.profiles,2)]);
+    axis([0 length(gelData.fullProfiles{channel,1}) 0 size(gelData.fullProfiles,2)]);
     
     % no preset range supplied, check if pocket positions are correct
     if isnan(preset_range)
@@ -78,4 +78,4 @@ end
 % close plot figure
 close
 
-gelData.pocketPositions=pocketPositions;
+gelData.pocketPositions = pocketPositions;
