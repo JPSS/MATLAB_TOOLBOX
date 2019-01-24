@@ -28,9 +28,9 @@ resolution = p.Results.resolution;
 
 %% normalize lanes by migration_speeds
 
-number_of_channels = size(lane_profile_data.profiles, 1)
-number_of_lanes = size(lane_profile_data.profiles, 2)
-profile_length = length(lane_profile_data.profiles{1,1})
+number_of_channels = size(lane_profile_data.fullProfiles, 1)
+number_of_lanes = size(lane_profile_data.fullProfiles, 2)
+profile_length = length(lane_profile_data.fullProfiles{1,1})
 
 for current_channel = 1:number_of_channels
     for current_lane = 1:number_of_lanes
@@ -42,7 +42,7 @@ for current_channel = 1:number_of_channels
         x_range = x_range ./ migration_speeds(current_lane);
 
         % load profile data
-        profile_data = lane_profile_data.profiles{current_channel, current_lane};
+        profile_data = lane_profile_data.fullProfiles{current_channel, current_lane};
         % adjust profile height to account for x_range rescaling, conserving profile integral
         profile_data = profile_data .* migration_speeds(current_lane);
         
