@@ -56,7 +56,9 @@ while strcmp(button,'No')
     
     clf
     for i=1:length(gelData.fullProfiles)
-        plot([gelData.fullProfiles{channel,i}]./max([gelData.fullProfiles{channel,i}])+i-1);
+        %plot([gelData.fullProfiles{channel,i}]./max([gelData.fullProfiles{channel,i}])+i-1);
+        % rescale plots such that pocket maximum is half of available row height in plot
+        plot([gelData.fullProfiles{channel,i}]./gelData.fullProfiles{channel,i}(pocketPositions(i))*0.5 +i -1);
         hold on
         x=[pocketPositions(i),pocketPositions(i)];
         y=[i-1,i];
