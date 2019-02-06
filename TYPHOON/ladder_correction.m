@@ -60,6 +60,8 @@ while strcmp(button,'No')
     if isnan(preset_locations)
         plot(ladder_minus_data(:,1));
         title('select 6 peak tops for start values x and y');
+        % set plot y range to maximum of profile after pocket_position + pocket offset
+        ylim([0  1.2 * max(ladder_minus_data(gel_data.pocketPositions(1) - gel_data.lanePositions(1,3) + 1 + pocket_offset:end, 1))])
         [x,y] = ginput(6);
         % distance between the first two bands
         inter_band_distance = x(2) - x(1);
@@ -94,9 +96,9 @@ while strcmp(button,'No')
     %coefficients of 6 gauss fit, distance is from start of profile, not pocket positions
     gauss_fit_coeffs = zeros(num_lanes, 6 * 3);
     
-    %fit gausses for every lane.  (starting from pocketPosition + pocketOffset)
+    %fit gausses for every lane.  (starting from pocketPosition(relative to full gel image) - selected profile area top edge + 1 + pocketOffset)
     for i = 1:num_lanes
-        current_pocket_start = gel_data.pocketPositions(i) + pocket_offset;
+        current_pocket_start = gel_data.pocketPositions(i) - gel_data.lanePositions(1,3) + 1 + pocket_offset;
         [fit_result{i}, gof, output] = fit((current_pocket_start:profile_length).', ladder_minus_data(current_pocket_start:end,i),...
                                                 fit_function, 'StartPoint', startValues);
         gauss_fit_coeffs(i,:)=coeffvalues(fit_result{i});
@@ -135,8 +137,8 @@ while strcmp(button,'No')
 end
 close(fig);    
 
-%mean DNA ladder speed of each lane, relative to its pocket position
-mean_ladder_speeds = mean(gauss_fit_coeffs(:,2:3:end).') - gel_data.pocketPositions;
+%mean DNA ladder speed of each lane, relative to its pocket position(relative to full gel image) + selected profile area top edge - 1
+mean_ladder_speeds = mean(gauss_fit_coeffs(:,2:3:end).') - gel_data.pocketPositions + gel_data.lanePositions(1,3) - 1;
 
 results = struct('gauss_fit_coeffs',{gauss_fit_coeffs});
 results.('mean_ladder_speeds') = mean_ladder_speeds;
