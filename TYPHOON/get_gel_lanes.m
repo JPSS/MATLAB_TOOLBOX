@@ -238,13 +238,19 @@ if display_bool
     hold on
     for i = 1:size(lanePositions,1)
         fitParameters = coeffvalues(laneFits{i,1});
+        
+        % center of fit function
+        fit_center = 0.5 * (fitParameters(2) + fitParameters(4));
+        % maximum y value of current fit
+        max_height_of_fit = gauss_convolve_step(fit_center, fitParameters(1), fitParameters(2), fitParameters(3), fitParameters(4));
+        
         plot(laneFits{i,1})
         x = [lanesFitted(i,1), lanesFitted(i,1)];
-        y = [0, fitParameters(3)];
-        plot(x, y, 'LineWidth', 0.5, 'color', 'black')
+        y = [0, max_height_of_fit];
+        plot(x, y, 'LineWidth', 0.5, 'color', 'black', 'LineStyle', '-')
         x = [lanesFitted(i,2),lanesFitted(i,2)];
-        y = [0, fitParameters(3)];
-        plot(x, y, 'LineWidth', 0.5, 'color', 'black')
+        y = [0, max_height_of_fit];
+        plot(x, y, 'LineWidth', 0.5, 'color', 'black', 'LineStyle', '-')
         title('fitted lanes - press any key');
     end
     pause
