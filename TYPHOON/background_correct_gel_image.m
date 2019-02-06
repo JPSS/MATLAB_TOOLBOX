@@ -81,6 +81,11 @@ for i = 1:imageData.nrImages
         %determine peak location+half bin size
         loc = 0.5 * (edges(loc) + edges(loc + 1));
         
+        % calculate cumulative sum of histogram
+        histogram_cum_sum = cumsum(histogram);
+        % find histogram index at which 90% of intensities are shown
+        [~, current_index] = min(abs(histogram_cum_sum - 0.9 * histogram_cum_sum(end)));
+                
         %display smooth histogram and unsmoothed histogram and peak location
         figure
         clf
@@ -88,7 +93,7 @@ for i = 1:imageData.nrImages
         hold on
         plot( edges(1:end - 1) + 0.5*(edges(2) - edges(1)), histogram)
         plot([loc loc],[0 max(histogram_smooth)]);
-        axis([min(min(imageData.images{i})) min(4*loc, max(max(imageData.images{i}))) 0 max(histogram)])
+        axis([min(min(imageData.images{i})) edges(current_index) 0 max(histogram)])
         pause
         
         % close figure
