@@ -107,19 +107,23 @@ while strcmp(button,'No')
 
     %plot fit results to check if fits are good
     for i = 1:num_lanes
-        %plot data
-        max_data_value = max(ladder_minus_data( floor(gauss_fit_coeffs(i,2)):ceil(gauss_fit_coeffs(i,17)) , i)) * 1.05;
-        plot((current_pocket_start:profile_length), ladder_minus_data(current_pocket_start:end,i)/max_data_value + i - 1,...
-            'Color', 'black', 'LineWidth', 2);
+        % current fit profile data
+        fit_profile = feval(fit_result{i}, (1:profile_length).');
+        % maximum intensity value of fit data
+        max_data_value = max(fit_profile);
+        
+        % plot normalized real data, scaled to 90% of row space
+        plot((current_pocket_start:profile_length), ladder_minus_data(current_pocket_start:end,i)/max_data_value * 0.9 + i - 1,...
+            'Color', 'black', 'LineWidth', 2, 'LineStyle', '-');
         hold on
+        
         %plot fits
-        plot((current_pocket_start:profile_length),...
-            feval(fit_result{i},...
-            (current_pocket_start:profile_length).')/max(feval(fit_result{i},(current_pocket_start:profile_length).'))/1.05 + i - 1,...
-            'Color', 'red', 'LineWidth', 1);
+        plot((1:profile_length),...
+            fit_profile ./ max_data_value * 0.9 + i - 1,...
+            'Color', 'red', 'LineWidth', 1, 'LineStyle', '-');
         %plot fit peak positions
         for j = 1:6
-            plot([gauss_fit_coeffs(i,j*3 - 1) gauss_fit_coeffs(i,j*3 - 1)],[i-1, i], 'Color', 'red')
+            plot([gauss_fit_coeffs(i,j*3 - 1) gauss_fit_coeffs(i,j*3 - 1)],[i-1, i], 'Color', 'red', 'LineStyle', '-')
         end
         
         ylim([-0.05 (i + 0.05)])
