@@ -3,11 +3,20 @@ function [ results ] = load_profire_csv(varargin)
 
 %% parse input variables
 p = inputParser;
-    
-%% load data
-% select file to open
-[filename, pathname] = uigetfile('*','select profire csv data','MultiSelect','off');
 
+addOptional(p,'filename','',@ischar);
+addOptional(p,'pathname','',@ischar);
+
+parse(p,varargin{:})
+
+filename = p.Results.filename;
+pathname = p.Results.pathname;
+
+%% load data
+if isempty(filename) || isempy(pathname)
+    % select file to open
+    [filename, pathname] = uigetfile('*','select profire csv data','MultiSelect','off');
+end
 % number of lines in csv file
 nr_lines = 30;
 % text data, each cell one line
@@ -49,5 +58,6 @@ results.Position2_strings = Valve2_strings;
 results.Position2_numbers = Valve2_numbers;
 results.Pressure_strings = Pressure_strings;
 results.Pressure_numbers = Pressure_numbers;
-
+results.filename = filename;
+results.pathname = pathname;
 return
