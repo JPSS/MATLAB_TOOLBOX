@@ -56,9 +56,15 @@ while strcmp(button,'No')
     
     clf
     for i=1:length(gelData.fullProfiles)
-        %plot([gelData.fullProfiles{channel,i}]./max([gelData.fullProfiles{channel,i}])+i-1);
-        % rescale plots such that pocket maximum is half of available row height in plot
-        plot([gelData.fullProfiles{channel,i}]./gelData.fullProfiles{channel,i}(pocketPositions(i))*0.5 +i -1);
+        % rescale current lane profile so that most negative value is set to 0
+        current_data = [gelData.fullProfiles{channel,i}];
+        current_data = current_data - min(0, min(current_data));
+        % rescale plots such that pocket maximum is 0.75 of available row height in plot
+        current_data = current_data./current_data(pocketPositions(i))*0.75;
+        % set values > 0.75 to 0.75 for visibility
+        current_data(current_data > 0.75) = 0.75;
+        
+        plot(current_data +i -1);
         hold on
         x=[pocketPositions(i),pocketPositions(i)];
         y=[i-1,i];
