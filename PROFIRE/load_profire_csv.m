@@ -13,7 +13,7 @@ filename = p.Results.filename;
 pathname = p.Results.pathname;
 
 %% load data
-if isempty(filename) || isempy(pathname)
+if length(filename)==0 || length(pathname)==0
     % select file to open
     [filename, pathname] = uigetfile('*','select profire csv data','MultiSelect','off');
 end
