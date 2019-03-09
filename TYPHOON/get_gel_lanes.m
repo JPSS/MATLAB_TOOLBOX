@@ -12,6 +12,7 @@ function gelData = get_gel_lanes(imageData,varargin)
 %       optional: background: switch copying background information from imageData to gelData
 %       optional: preset_laneArea: switch presetting selection of image area to be used for fitting to top half of gel
 %       optional: vertical_correction: switch shifting vertical sum of gel so that no negative values remain
+%       optional: move min to zero
 %   OUTPUT:
 %   gelData struct with .profiles .lanePositions .imageNames
 %   .profiles is cell array {nr_image,nr_lane} of lane profiles (horizontal integrals)
@@ -60,6 +61,11 @@ function gelData = get_gel_lanes(imageData,varargin)
     expected_vertical_correction = {'on', 'off'};
     addParameter(p,'vertical_correction', default_vertical_correction,  @(x) any(validatestring(x,expected_vertical_correction))); % check vertical_correction is 'on' or 'off'
 
+    % optional parameter: vertical_correction (if on vertical correction question dialog is shown)
+    default_move_min_zero = 'Ask';
+    expected_move_min_zero = {'Yes', 'Ask', 'No'};
+    addParameter(p,'move_min_zero', default_move_min_zero,  @(x) any(validatestring(x,expected_move_min_zero))); % check vertical_correction is 'on' or 'off'
+
     parse(p, imageData, varargin{:});
     display_bool = strcmp(p.Results.display, 'on');
     weight_factors = p.Results.weight_factors;
@@ -68,6 +74,7 @@ function gelData = get_gel_lanes(imageData,varargin)
     background_bool = strcmp(p.Results.background,'on');
     preset_laneArea_bool = strcmp(p.Results.preset_laneArea,'on');
     vertical_correction_bool = strcmp(p.Results.vertical_correction,'on');
+    move_min_zero = p.Results.move_min_zero;
 
 %% load image weight factors
 
@@ -137,9 +144,12 @@ if vertical_correction_bool
     plot([1 selectedArea(3)],[0 0])
     legend('original','move to 0')
 
-    button = questdlg('move min value to 0?','move min value to 0?' ,'No','Yes', 'Yes');
-
-    if strcmp(button,'Yes')
+    
+    if strcmp(move_min_zero, 'Ask')
+        move_min_zero = questdlg('move min value to 0?','move min value to 0?' ,'No','Yes', 'Yes');
+    end
+        
+    if strcmp(move_min_zero,'Yes')
         verticalSum = verticalSum - minValue;
     end
     close(fig)
