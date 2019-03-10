@@ -13,6 +13,7 @@ function gelData = get_gel_lanes(imageData,varargin)
 %       optional: preset_laneArea: switch presetting selection of image area to be used for fitting to top half of gel
 %       optional: vertical_correction: switch shifting vertical sum of gel so that no negative values remain
 %       optional: move min to zero
+%       optional: number of lanes. use together with manual selection
 %   OUTPUT:
 %   gelData struct with .profiles .lanePositions .imageNames
 %   .profiles is cell array {nr_image,nr_lane} of lane profiles (horizontal integrals)
@@ -42,7 +43,7 @@ function gelData = get_gel_lanes(imageData,varargin)
     addParameter(p,'display', default_display,  @(x) any(validatestring(x,expected_display))); % check display is 'on' or 'off'
     
     % optional parameter: selection_type, for initial lane selection
-    default_selection_type = 'automatic';
+    default_selection_type = 'unknown';
     expected_selection_type = {'automatic', 'manual'};
     addParameter(p,'selection_type', default_selection_type,  @(x) any(validatestring(x,expected_selection_type)));
     
@@ -61,11 +62,14 @@ function gelData = get_gel_lanes(imageData,varargin)
     expected_vertical_correction = {'on', 'off'};
     addParameter(p,'vertical_correction', default_vertical_correction,  @(x) any(validatestring(x,expected_vertical_correction))); % check vertical_correction is 'on' or 'off'
 
-    % optional parameter: vertical_correction (if on vertical correction question dialog is shown)
+    % optional parameter: move_min_zero
     default_move_min_zero = 'Ask';
     expected_move_min_zero = {'Yes', 'Ask', 'No'};
-    addParameter(p,'move_min_zero', default_move_min_zero,  @(x) any(validatestring(x,expected_move_min_zero))); % check vertical_correction is 'on' or 'off'
-
+    addParameter(p,'move_min_zero', default_move_min_zero,  @(x) any(validatestring(x,expected_move_min_zero))); 
+ 
+    % optional parameter: number_of_lanes
+    addParameter(p,'number_of_lanes', -1,  @isnumeric); % default is -1
+    
     parse(p, imageData, varargin{:});
     display_bool = strcmp(p.Results.display, 'on');
     weight_factors = p.Results.weight_factors;
@@ -75,7 +79,7 @@ function gelData = get_gel_lanes(imageData,varargin)
     preset_laneArea_bool = strcmp(p.Results.preset_laneArea,'on');
     vertical_correction_bool = strcmp(p.Results.vertical_correction,'on');
     move_min_zero = p.Results.move_min_zero;
-
+    number_of_lanes = p.Results.number_of_lanes;
 %% load image weight factors
 
 if length(weight_factors) ~= imageData.nrImages
@@ -94,7 +98,7 @@ for i=2:imageData.nrImages
 end
 
 %select area for lane determination
-plot_image_ui(image_sum)                                        
+plot_image_ui(image_sum);                                        
 title('Select area of lanes')
 if preset_laneArea_bool
     h = imrect(gca,[1 1 size(imageData.images{1},2)-1 0.5*size(imageData.images{1},1)]);
@@ -103,32 +107,46 @@ else
 end
 wait(h);
 selectedArea = int32(getPosition(h));
-if strcmp(selection_type, 'manual')
-    % manual detection of lanes
-    close all
-    lanePositions = manual_lane_selection(image_sum, selectedArea);
 
-else 
-    % automatic detecion of lanes
-    button='No';
-    %find lane fit start values using find_lanes_roots()
-    while strcmp(button,'No')
-        lanePositions = find_lanes_intersect(image_sum, selectedArea);
-        close all
-
-        fig = plot_image_ui(image_sum);
-        title('preselected lanes');
-        hold on
-        for i = 1:size(lanePositions,1)
-            rectangle('Position', lanePositions(i,:), 'EdgeColor', 'r'), hold on
-        end
-        button = questdlg('are the selected starting lanes ok?','are the selected starting lanes ok?' ,'No','Yes', 'Yes');
-        close(fig);
-
+%%
+init_lanes_ok='No';
+while strcmp(init_lanes_ok,'No')
+    if strcmp(selection_type, 'unknown')
+        % show horizontal profile 
+        horizontalProfile = sum(image_sum( selectedArea(2):selectedArea(2)+selectedArea(4), selectedArea(1):selectedArea(1)+selectedArea(3))); % integrate along vertical (y-axis) 
+        cf = figure();
+        plot(horizontalProfile)
+        %ask which method to use
+        selection_type = questdlg('Which method do you want to use?','Select method.' ,'automatic','manual', 'automatic');
+        close(cf)
     end
+
+
+    close all
+    if strcmp(selection_type, 'manual')
+        % manual detection of lanes
+        lanePositions = manual_lane_selection(image_sum, selectedArea, number_of_lanes);
+    else 
+        % automatic detecion of lanes
+        lanePositions = find_lanes_intersect(image_sum, selectedArea);
+    end
+    
+    % ask whether initials lanes are ok
+    fig = plot_image_ui(image_sum);
+    title('initial lanes');
+    hold on
+    for i = 1:size(lanePositions,1)
+        rectangle('Position', lanePositions(i,:), 'EdgeColor', 'r'), hold on
+    end
+    init_lanes_ok = questdlg('are the initial lanes ok?','initial lanes' ,'No','Yes', 'Yes');
+    if strcmp(init_lanes_ok, 'No')
+        selection_type = 'unknown';
+    end
+    close(fig);
+    close all
 end
 nr_lanes = size(lanePositions,1);
-
+%%
 %% if there are negative vertical sums (due to bg correction), raise vertical sums to 0
 
 area = image_sum( selectedArea(2):selectedArea(2)+selectedArea(4), selectedArea(1):selectedArea(1)+selectedArea(3));
