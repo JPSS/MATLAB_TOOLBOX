@@ -55,14 +55,19 @@ for i = 1:imageData.nrImages
         loc = 0.5 * (edges(loc) + edges(loc + 1));
         
         %display smooth histogram and unsmoothed histogram and peak location
-        figure
+        cf = figure;
         clf
         plot( edges(1:end - 1) + 0.5*(edges(2) - edges(1)), histogram_smooth)
         hold on
         plot( edges(1:end - 1) + 0.5*(edges(2) - edges(1)), histogram)
         plot([loc loc],[0 max(histogram_smooth)]);
         axis([min(min(imageData.images{i})) min(4*loc, max(max(imageData.images{i}))) 0 max(histogram)])
+        title('Press a button to continue')
+        xlabel('Pixel intesity')
+        ylabel('Number of pixels')
+        legend({'Raw histogram', 'Smoothed histogram', 'Background level'})
         pause
+        close(cf)
         
         %save background correction value
         background{i} = loc;
@@ -74,7 +79,7 @@ for i = 1:imageData.nrImages
     end
 end
 %% create imageDataBgCorrected structure, return imageDataBgCorrected structure
-
+imageData.images_raw = imageData.images; % keep original data
 imageData.images = images_bg;
 imageData.background = background;
 imageDataBgCorrected = imageData;
