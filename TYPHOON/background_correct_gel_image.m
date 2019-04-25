@@ -11,17 +11,20 @@ function imageDataBgCorrected = background_correct_gel_image(imageData, varargin
 
 %% parse input
 p = inputParser;
-% default for number of references for background correction
-default_n_ref_bg = 1;
 
 addRequired(p, 'imageData');
+
+% optional parameter: number of areas for background intensity determination,
+% default for number of references for background correction
+default_n_ref_bg = 1;
 addParameter(p, 'numberOfAreas', default_n_ref_bg, @isnumeric); 
 
-% optional parameter: histogram_background (if on, selects background from maximum of smoothed image histogram
-default_histogram_background = 'off';
-expected_histogram_background = {'on', 'off'};
-% check histogram_background is 'on' or 'off'
-addParameter(p, 'histogram_background', default_histogram_background, @(x) any(validatestring(x,expected_histogram_background)));
+% optional parameter: background correction mode: area, vertical integral,
+% or histogram
+default_mode = 'area';
+expected_mode = {'histogram', 'area', 'vertical'};
+% check correction mode
+addParameter(p, 'mode', default_mode, @(x) any(validatestring(x, expected_mode)));
 
 % optional parameter: histogram_smooth_span for image histogram smoothing for background determination
 default_histogram_smooth_span = 10;
@@ -31,7 +34,7 @@ parse(p, imageData, varargin{:});
 % number of references for background correction
 n_ref_bg = p.Results.numberOfAreas;
 
-histogram_background_bool = strcmp(p.Results.histogram_background, 'on');
+mode = p.Results.mode;
 histogram_smooth_span = p.Results.histogram_smooth_span;
 
 %% apply background correction to images
@@ -41,7 +44,7 @@ background = cell(imageData.nrImages, 1); % stores bckground values
 for i = 1:imageData.nrImages
     
     %subtract maximum location value of smoothed image histogram from image
-    if histogram_background_bool
+    if strcmp(mode, 'histogram')
         
         % check if .gel format was used to generate LAU format
         if isfield(imageData,'images_tiff_format')
@@ -103,7 +106,53 @@ for i = 1:imageData.nrImages
         background{i} = loc;
         %subtract background correction value
         images_bg{i} = imageData.images{i} - loc;
-    else
+
+    elseif strcmp(mode, 'vertical')
+        %select area for vertical mean analysis
+        current_fig = plot_image_ui(imageData.images{i});
+        title('Select area of lanes')
+        h = imrect;
+        wait(h);
+        selected_area = int32(getPosition(h));
+        close(current_fig)
+
+        y_min = selected_area(2);
+        y_max = selected_area(2) + selected_area(4) -  1;
+        x_min = selected_area(1);
+        x_max = selected_area(1) + selected_area(3) - 1;
+        
+        % calculate vertical mean values of full gel and selected gel area
+        vertical_mean_full = mean(imageData.images{i});
+        vertical_mean_selected = mean(imageData.images{i}(y_min:y_max, x_min:x_max));
+        
+        %plot horizontal profile and determine threshold interactively
+        current_fig = figure;
+        plot(vertical_mean_full)
+        hold on
+        plot(x_min:x_max, vertical_mean_selected)
+                
+        xlabel('Horizontal Position [pixel]')
+        ylabel('Mean intensity [a.u.]')
+
+        % let user select threshold if preset_threshold is not supplied
+        % create draggable line and read the choosen value
+        
+        x_range = [1 size(imageData.images{i}, 2)];
+        % smallest value in mean vertical values in selected area
+        vertical_mean_selected_min = min(vertical_mean_selected);
+        
+        %plot horizontal line, select background
+        h = imline(gca, x_range, [vertical_mean_selected_min vertical_mean_selected_min]);
+        setColor(h,[1 0 0]);
+        setPositionConstraintFcn(h, @(pos)[  x_range' [pos(1,2);pos(1,2)]  ])
+        pos_line = wait(h);
+        background{i} = pos_line(1,2);
+        close(current_fig)
+
+        % apply background correction
+        images_bg{i} = imageData.images{i} - background{i};
+        
+    elseif strcmp(mode, 'area')
         % subtract a constant from each image  
         [images_bg{i}, background{i}] = correct_background(imageData.images{i}, 'areas', n_ref_bg);
     end
