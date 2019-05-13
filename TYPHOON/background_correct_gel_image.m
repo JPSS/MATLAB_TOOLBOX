@@ -130,9 +130,10 @@ for i = 1:imageData.nrImages
         plot(vertical_mean_full)
         hold on
         plot(x_min:x_max, vertical_mean_selected)
-                
+        title('Select vertical cutoff, double-click red line')
         xlabel('Horizontal Position [pixel]')
         ylabel('Mean intensity [a.u.]')
+        legend({'mean intensity full gel', 'mean intensity selected area'})
 
         % let user select threshold if preset_threshold is not supplied
         % create draggable line and read the choosen value
