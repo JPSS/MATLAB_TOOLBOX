@@ -92,19 +92,19 @@ title('Select area of lanes')
 if strcmp(preset_laneArea_parameter, 'on')
     h = imrect(gca,[1 1 size(imageData.images{1},2)-1 0.5*size(imageData.images{1},1)]);
     wait(h);
-    selectedArea = int32(getPosition(h));
+    selectedArea = int32(getPosition(h))
 
 % preset lane area is off, draw full rectangle
 elseif strcmp(preset_laneArea_parameter, 'off')
     h = imrect;
     wait(h);
-    selectedArea = int32(getPosition(h));
+    selectedArea = int32(getPosition(h))
 
 % preset lane area is on with positions delivered, draw and accept rectangle
 else
     title('Preselected gel area (Press any key to continue)')
     rectangle('Position', preset_laneArea_parameter)
-    selectedArea = preset_laneArea_parameter;
+    selectedArea = preset_laneArea_parameter
     %h = imrect(gca, preset_laneArea_parameter);
     pause
 end
